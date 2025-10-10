@@ -21,6 +21,10 @@ const (
 	COINIT_MULTITHREADED     = 0x0 // Multi-threaded apartment
 )
 
+// suppress unused
+var _ = COINIT_APARTMENTTHREADED
+var _ = COINIT_MULTITHREADED
+
 func CoInitializeEx(coInit uintptr) error {
 	ret, _, _ := procCoInitializeEx.Call(0, coInit)
 	if ret != 0 {
@@ -30,11 +34,11 @@ func CoInitializeEx(coInit uintptr) error {
 }
 
 func CoUninitialize() {
-	procCoUninitialize.Call()
+	procCoUninitialize.Call() // error is ignored
 }
 
 func main() {
-	err := CoInitializeEx(COINIT_MULTITHREADED)
+	err := CoInitializeEx(COINIT_MULTITHREADED) // error is ignored
 	if err != nil {
 		log.Fatalf("CoInitializeEx failed: %v", err)
 	}
