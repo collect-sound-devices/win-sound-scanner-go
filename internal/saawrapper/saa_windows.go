@@ -12,7 +12,7 @@ package saawrapper
 
 #include "SoundAgentApi.h"
 
-// Forward declarations of Go-exported callbacks (implemented in package main)
+// Forward declarations of Go-exported callbacks (implemented in this package)
 void __stdcall cgoSaaDefaultRenderChanged(BOOL presentOrAbsent);
 void __stdcall cgoSaaDefaultCaptureChanged(BOOL presentOrAbsent);
 void __stdcall cgoSaaGotLogMessage(SaaLogMessage message);
@@ -89,15 +89,9 @@ func Initialize(appName, appVersion string) (Handle, error) {
 	return Handle(h), nil
 }
 
-func RegisterCallbacks(h Handle, onRender, onCapture bool) error {
-	var renderCb C.TSaaDefaultChangedCallback
-	var captureCb C.TSaaDefaultChangedCallback
-	if onRender {
-		renderCb = (C.TSaaDefaultChangedCallback)(C.cgoSaaDefaultRenderChanged)
-	}
-	if onCapture {
-		captureCb = (C.TSaaDefaultChangedCallback)(C.cgoSaaDefaultCaptureChanged)
-	}
+func RegisterCallbacks(h Handle) error {
+	renderCb := (C.TSaaDefaultChangedCallback)(C.cgoSaaDefaultRenderChanged)
+	captureCb := (C.TSaaDefaultChangedCallback)(C.cgoSaaDefaultCaptureChanged)
 	rc := C.SaaRegisterCallbacks(C.SaaHandle(h), renderCb, captureCb)
 	if rc != 0 {
 		return fmt.Errorf("SaaRegisterCallbacks failed: rc=%d", int32(rc))
