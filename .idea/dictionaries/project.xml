@@ -2,6 +2,8 @@
   <dictionary name="project">
     <words>
       <w>appinfo</w>
+      <w>ghcr</w>
+      <w>pwsh</w>
       <w>saawrapper</w>
     </words>
   </dictionary>
