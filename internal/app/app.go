@@ -2,22 +2,20 @@ package app
 
 import (
 	"context"
+	"github.com/eduarddanziger/sound-win-scanner/v4/pkg/soundlibwrap"
 	"log"
 	"os"
 	"strings"
-
 	"win-sound-dev-go-bridge/pkg/appinfo"
-
-	saawrapper "github.com/eduarddanziger/sound-win-scanner/v4/pkg/soundlibwrap"
 )
 
-var SaaHandle saawrapper.Handle
+var SaaHandle soundlibwrap.Handle
 
 func Run(ctx context.Context) error {
 	logger := log.New(os.Stdout, "", log.LstdFlags)
 	prefix := "log event handler,"
 	// Bridge C log messages to Go logger.
-	saawrapper.SetLogHandler(func(level, content string) {
+	soundlibwrap.SetLogHandler(func(level, content string) {
 		switch strings.ToLower(level) {
 		case "trace", "debug":
 			logger.Printf("[%s debug] %s", prefix, content)
@@ -33,20 +31,20 @@ func Run(ctx context.Context) error {
 	})
 
 	// Device default change notifications.
-	saawrapper.SetDefaultRenderHandler(func(present bool) {
+	soundlibwrap.SetDefaultRenderHandler(func(present bool) {
 		logger.Printf("[default render handler] present=%v", present)
 		if present {
-			if desc, err := saawrapper.GetDefaultRender(SaaHandle); err == nil {
+			if desc, err := soundlibwrap.GetDefaultRender(SaaHandle); err == nil {
 				logger.Printf("[default render handler] name=%q pnpId=%q vol=%d", desc.Name, desc.PnpID, desc.RenderVolume)
 			} else {
 				logger.Printf("[default render handler] error: %v", err)
 			}
 		}
 	})
-	saawrapper.SetDefaultCaptureHandler(func(present bool) {
+	soundlibwrap.SetDefaultCaptureHandler(func(present bool) {
 		logger.Printf("[default capture handler] present=%v", present)
 		if present {
-			if desc, err := saawrapper.GetDefaultCapture(SaaHandle); err == nil {
+			if desc, err := soundlibwrap.GetDefaultCapture(SaaHandle); err == nil {
 				logger.Printf("[default capture handler] name=%q pnpId=%q vol=%d", desc.Name, desc.PnpID, desc.RenderVolume)
 			} else {
 				logger.Printf("[default capture handler] error: %v", err)
@@ -58,26 +56,26 @@ func Run(ctx context.Context) error {
 
 	// Initialize the C library and register callbacks using the global handle.
 	var err error
-	SaaHandle, err = saawrapper.Initialize(appinfo.AppName, appinfo.Version)
+	SaaHandle, err = soundlibwrap.Initialize(appinfo.AppName, appinfo.Version)
 	if err != nil {
 		return err
 	}
 	defer func() {
-		_ = saawrapper.Uninitialize(SaaHandle)
+		_ = soundlibwrap.Uninitialize(SaaHandle)
 		SaaHandle = 0
 	}()
 
-	if err := saawrapper.RegisterCallbacks(SaaHandle); err != nil {
+	if err := soundlibwrap.RegisterCallbacks(SaaHandle); err != nil {
 		return err
 	}
 
 	// Print the default render and capture devices.
-	if desc, err := saawrapper.GetDefaultRender(SaaHandle); err == nil {
+	if desc, err := soundlibwrap.GetDefaultRender(SaaHandle); err == nil {
 		logger.Printf("[initially print default render] name=%q pnpId=%q vol=%d", desc.Name, desc.PnpID, desc.RenderVolume)
 	} else {
 		logger.Printf("[initially print default render] error: %v", err)
 	}
-	if desc, err := saawrapper.GetDefaultCapture(SaaHandle); err == nil {
+	if desc, err := soundlibwrap.GetDefaultCapture(SaaHandle); err == nil {
 		logger.Printf("[initially print default capture] name=%q pnpId=%q vol=%d", desc.Name, desc.PnpID, desc.CaptureVolume)
 	} else {
 		logger.Printf("[initially print default capture] error: %v", err)
