@@ -3,10 +3,14 @@
 Go + cgo bridge to `SoundAgentApiDll.dll` for monitoring/querying Windows default audio devices.
 
 ## Build (powershell)
-Prereqs: CGO enabled and a GCC-style toolchain (MinGW-w64 gcc or LLVM-mingw clang). MSVC `cl.exe` is not supported by cgo.
+Prereqs: CGO enabled and a GCC-style toolchain (MinGW-w64 gcc or LLVM-mingw clang).
+E.g. if you download llvm-mingw-20251118-msvcrt-x86_64.zip, copy its bin, include,
+lib and x86_64-w64-mingw32 folders to C:\tools\llvm-mingw 
 
 ```powershell
-$Env:CGO_ENABLE=1
+$Env:CGO_ENABLED = "1"
+$Env:CC = "C:\tools\llvm-mingw\bin\x86_64-w64-mingw32-clang.exe"
+$Env:CXX = "C:\tools\llvm-mingw\bin\x86_64-w64-mingw32-clang++.exe"
 
 go build -o (Join-Path $PWD.Path 'bin/')
 
