@@ -47,10 +47,10 @@ jobs:
           APP_VERSION: ${{ env.APP_VERSION }}
         run: |
           $Env:CGO_ENABLED = "1"
-          # TODO: adjust toolchain path if needed on windows-2022 runner
-          # Example assumes llvm-mingw installed at C:\tools\llvm-mingw
-          $Env:CC  = "C:\tools\llvm-mingw\bin\x86_64-w64-mingw32-clang.exe"
-          $Env:CXX = "C:\tools\llvm-mingw\bin\x86_64-w64-mingw32-clang++.exe"
+
+          # Use MSVC toolchain available on windows-2022 instead of a hardcoded llvm-mingw path.
+          # Load the Visual Studio environment (this sets up cl.exe and related vars for 64-bit build).
+          & "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" amd64
 
           New-Item -ItemType Directory -Force -Path (Join-Path $PWD "bin") | Out-Null
 
@@ -75,9 +75,9 @@ jobs:
           APP_VERSION: ${{ env.APP_VERSION }}
         run: |
           $Env:CGO_ENABLED = "1"
-          # TODO: adjust toolchain path if needed on windows-2022 runner
-          $Env:CC  = "C:\tools\llvm-mingw\bin\x86_64-w64-mingw32-clang.exe"
-          $Env:CXX = "C:\tools\llvm-mingw\bin\x86_64-w64-mingw32-clang++.exe"
+
+          # Re-load MSVC environment for final build.
+          & "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" amd64
 
           New-Item -ItemType Directory -Force -Path (Join-Path $PWD "bin") | Out-Null
 
