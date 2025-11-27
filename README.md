@@ -20,11 +20,7 @@ go build -o (Join-Path $PWD.Path 'bin/')
 
 ## once more
 go build -o (Join-Path $PWD.Path 'bin/') 
-
-
-
 ```
-
 
 ## Run
 ```powershell
@@ -35,7 +31,7 @@ go build -o (Join-Path $PWD.Path 'bin/')
 - github.com/eduarddanziger/sound-win-scanner/v4 (pkg/soundlibwrap): cgo wrapper around SoundAgentApi, see [soundlibwrap documentation](https://pkg.go.dev/github.com/eduarddanziger/sound-win-scanner/v4/pkg/soundlibwrap)
 
 ## Advanced
-Youz can use  clang instead of gcc:
+You can use  clang instead of gcc:
 ```bat
 set CC=...x86_64-w64-mingw32-clang
 set CXX=...x86_64-w64-mingw32-clang++
