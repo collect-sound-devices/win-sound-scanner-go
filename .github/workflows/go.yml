@@ -44,7 +44,8 @@ jobs:
       - name: Install llvm-mingw (clang toolchain for CGO)
         shell: powershell
         run: |
-          $url = "https://github.com/mstorsjo/llvm-mingw/releases/download/20240910/llvm-mingw-20240910-msvcrt-x86_64.zip"
+          # NOTE: keep this in sync with a real llvm-mingw release tag
+          $url = "https://github.com/mstorsjo/llvm-mingw/releases/download/20240619/llvm-mingw-20240619-msvcrt-x86_64.zip"
           $zip = Join-Path $Env:TEMP "llvm-mingw.zip"
           $destRoot = "C:\tools"
           $dest = Join-Path $destRoot "llvm-mingw"
