@@ -5,19 +5,66 @@ name: Go
 
 on:
   push:
+    branches:
+      - main
     tags:
-      - v*
+      - 'Release-*'
   workflow_dispatch:
 
+  permissions:
+    contents: write
+
 jobs:
+  compute-version:
+    runs-on: windows-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.VERSION }}
+    steps:
+        - name: Determine version (SemVer)
+          id: get_version
+          shell: pwsh
+          run: |
+            $ref = $env:GITHUB_REF
+            # Find the latest Release-* tag.
+            $latestTag = git describe --tags --match "Release-*" --abbrev=0
+            if (-not $latestTag) {
+                Write-Host "No Release tag found. Using default version 1.0.0."
+                "VERSION=1.0.0" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+                "version=1.0.0" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+                exit 0
+            }
+            # Extract version number from the tag (e.g., Release-1.0.1 -> 1.0.1)
+            $versionNumber = $latestTag -replace '^Release-', ''
+            Write-Host "latestTag: $latestTag, versionNumber: $versionNumber"
+            $distance = git rev-list --count "$latestTag..HEAD"
+
+            # Append -rc<distance> if distance is greater than 0
+            if ($distance -gt 0) {
+                # Increment the patch number for a prerelease build
+                $versionParts = $versionNumber -split '\.'
+                $versionParts[2] = [int]$versionParts[2] + 1
+                $versionNumber = $versionParts -join '.'
+                Write-Output "VERSION CORRECTED, versionNumber: $versionNumber"
+                $version = "$versionNumber-rc.$distance"
+            } else {
+                $version = $versionNumber
+            }
+            $version = 'v' + $version
+            Write-Host "Derived development version: $version (base tag: $latestTag)"
+            "VERSION=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+            "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+            Write-Host "Using version: $version"
+      
+
   build-and-push:
-    runs-on: windows-2022
+    runs-on: windows-latest
+    needs: compute-version
     permissions:
       contents: read
       packages: write
     env:
       IMAGE_NAME: ghcr.io/${{ github.repository }}
-      VERSION: ${{ github.ref_name }}
+      VERSION: ${{ needs.compute-version.outputs.version }}
 
     steps:
       - name: Checkout
@@ -27,19 +74,6 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "1.25.x"
-
-      - name: Compute app version
-        shell: powershell
-        run: |
-          $version = "${{ env.VERSION }}"
-          if (-not $version) {
-            $version = "dev"
-          }
-          if ($version.StartsWith("v")) {
-            $version = $version.Substring(1)
-          }
-          Write-Host "Computed APP_VERSION=$version"
-          "APP_VERSION=$version" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Install llvm-mingw (clang toolchain for CGO)
         shell: powershell
@@ -66,20 +100,33 @@ jobs:
             Get-ChildItem -Path $inner.FullName | Move-Item -Destination $dest -Force
             Remove-Item -Recurse -Force $inner.FullName
           }
-
           Remove-Item $zip -Force
-
           Write-Host "llvm-mingw installed under $dest"
+
+      - name: Setting environment variables for the rest of the steps
+        shell: powershell
+        run: |
+          $version = "${{ env.VERSION }}"
+          if (-not $version) {
+            $version = "unknown"
+          }
+          if ($version.StartsWith("v")) {
+            $version = $version.Substring(1)
+          }
+          $cgo_enabled = "1"
+          $cc  = "C:\tools\llvm-mingw\bin\x86_64-w64-mingw32-clang.exe"
+          $cxx = "C:\tools\llvm-mingw\bin\x86_64-w64-mingw32-clang++.exe"
+          Write-Host "Computed APP_VERSION=$version"
+          "CGO_ENABLED=$cgo_enabled" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          "CC=$cc" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          "CXX=$cxx" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          "APP_VERSION=$version" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Build Go binary (CGO, Windows) first time, compiler errors ignored
         shell: powershell
         env:
           APP_VERSION: ${{ env.APP_VERSION }}
         run: |
-          $Env:CGO_ENABLED = "1"
-          $Env:CC  = "C:\tools\llvm-mingw\bin\x86_64-w64-mingw32-clang.exe"
-          $Env:CXX = "C:\tools\llvm-mingw\bin\x86_64-w64-mingw32-clang++.exe"
-
           New-Item -ItemType Directory -Force -Path (Join-Path $PWD "bin") | Out-Null
 
           $ldflags = "-X github.com/eduarddanziger/win-sound-dev-go-bridge/pkg/appinfo.Version=$Env:APP_VERSION"
@@ -108,13 +155,8 @@ jobs:
         env:
           APP_VERSION: ${{ env.APP_VERSION }}
         run: |
-          $Env:CGO_ENABLED = "1"
-          $Env:CC  = "C:\tools\llvm-mingw\bin\x86_64-w64-mingw32-clang.exe"
-          $Env:CXX = "C:\tools\llvm-mingw\bin\x86_64-w64-mingw32-clang++.exe"
-
-          New-Item -ItemType Directory -Force -Path (Join-Path $PWD "bin") | Out-Null
-
           $ldflags = "-X github.com/eduarddanziger/win-sound-dev-go-bridge/pkg/appinfo.Version=$Env:APP_VERSION"
+          Write-Host "Restarting go build with CGO..."
           go build -ldflags $ldflags -o (Join-Path $PWD.Path 'bin/')
 
       - name: Package bin directory
