@@ -11,8 +11,8 @@ on:
       - 'Release-*'
   workflow_dispatch:
 
-  permissions:
-    contents: write
+permissions:
+  contents: write
 
 jobs:
   compute-version:
