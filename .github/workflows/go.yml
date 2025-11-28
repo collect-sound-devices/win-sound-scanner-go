@@ -15,61 +15,60 @@ permissions:
   contents: write
 
 jobs:
-  compute-version:
+  setup-and-compute-version:
     runs-on: windows-latest
     outputs:
       version: ${{ steps.get_version.outputs.VERSION }}
     steps:
-        - name: Determine version (SemVer)
-          id: get_version
-          shell: pwsh
-          run: |
-            $ref = $env:GITHUB_REF
-            # Find the latest Release-* tag.
-            $latestTag = git describe --tags --match "Release-*" --abbrev=0
-            if (-not $latestTag) {
-                Write-Host "No Release tag found. Using default version 1.0.0."
-                "VERSION=1.0.0" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-                "version=1.0.0" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-                exit 0
-            }
-            # Extract version number from the tag (e.g., Release-1.0.1 -> 1.0.1)
-            $versionNumber = $latestTag -replace '^Release-', ''
-            Write-Host "latestTag: $latestTag, versionNumber: $versionNumber"
-            $distance = git rev-list --count "$latestTag..HEAD"
+      - name: Checkout
+        uses: actions/checkout@v4
 
-            # Append -rc<distance> if distance is greater than 0
-            if ($distance -gt 0) {
-                # Increment the patch number for a prerelease build
-                $versionParts = $versionNumber -split '\.'
-                $versionParts[2] = [int]$versionParts[2] + 1
-                $versionNumber = $versionParts -join '.'
-                Write-Output "VERSION CORRECTED, versionNumber: $versionNumber"
-                $version = "$versionNumber-rc.$distance"
-            } else {
-                $version = $versionNumber
-            }
-            $version = 'v' + $version
-            Write-Host "Derived development version: $version (base tag: $latestTag)"
-            "VERSION=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-            "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
-            Write-Host "Using version: $version"
-      
+      - name: Determine version (SemVer)
+        id: get_version
+        shell: pwsh
+        run: |
+          $ref = $env:GITHUB_REF
+          # Find the latest Release-* tag.
+          $latestTag = git describe --tags --match "Release-*" --abbrev=0
+          if (-not $latestTag) {
+              Write-Host "No Release tag found. Using default version 1.0.0."
+              "VERSION=1.0.0" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+              "version=1.0.0" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+              exit 0
+          }
+          # Extract version number from the tag (e.g., Release-1.0.1 -> 1.0.1)
+          $versionNumber = $latestTag -replace '^Release-', ''
+          Write-Host "latestTag: $latestTag, versionNumber: $versionNumber"
+          $distance = git rev-list --count "$latestTag..HEAD"
+  
+          # Append -rc<distance> if distance is greater than 0
+          if ($distance -gt 0) {
+              # Increment the patch number for a prerelease build
+              $versionParts = $versionNumber -split '\.'
+              $versionParts[2] = [int]$versionParts[2] + 1
+              $versionNumber = $versionParts -join '.'
+              Write-Output "VERSION CORRECTED, versionNumber: $versionNumber"
+              $version = "$versionNumber-rc.$distance"
+          } else {
+              $version = $versionNumber
+          }
+          $version = 'v' + $version
+          Write-Host "Derived development version: $version (base tag: $latestTag)"
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "Using version: $version"
 
   build-and-push:
     runs-on: windows-latest
-    needs: compute-version
+    needs: setup-and-compute-version
     permissions:
       contents: read
       packages: write
     env:
       IMAGE_NAME: ghcr.io/${{ github.repository }}
-      VERSION: ${{ needs.compute-version.outputs.version }}
+      VERSION: ${{ needs.setup-and-compute-version.outputs.version }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
