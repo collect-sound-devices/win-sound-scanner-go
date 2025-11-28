@@ -23,6 +23,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Unshallow repository
+        run: git fetch --prune --unshallow
+
       - name: Determine version (SemVer)
         id: get_version
         shell: pwsh
