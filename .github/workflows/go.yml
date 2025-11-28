@@ -5,12 +5,16 @@ name: Go
 
 on:
   push:
+    branches:
+      - main
     tags:
-      - v*
+      - 'Release-*'
   workflow_dispatch:
 
-jobs:
+  permissions:
+    contents: write
 
+jobs:
   compute-version:
     runs-on: windows-latest
     outputs:
