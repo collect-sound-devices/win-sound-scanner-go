@@ -190,7 +190,9 @@ jobs:
   publish:
     if: github.ref != 'refs/pull/develop'
     # if: startsWith(github.ref, 'refs/tags/v')
-    needs: build
+    needs:
+      - setup-and-compute-version
+      - build
     runs-on: ubuntu-latest
 
     steps:
@@ -204,8 +206,9 @@ jobs:
           path: build
 
       - name: Create or update Release
+        env:
+          VERS: ${{ needs.setup-and-compute-version.outputs.version }}
         run: |
-          VERS=${{ needs.setup-and-compute-version.outputs.version }}
           echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
           if gh release view "$VERS" > /dev/null 2>&1; then
             echo "Release $VERS already exists; updating assets"
