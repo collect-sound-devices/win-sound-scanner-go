@@ -45,26 +45,17 @@ func logError(format string, v ...interface{}) {
 	logf("error", format, v...)
 }
 
-func postDeviceToApi(enqueue func(string, map[string]string), eventType, flowType, name, pnpID string, renderVolume, captureVolume *int) {
+func postDeviceToApi(enqueue func(string, map[string]string), eventType, flowType, name, pnpID string, renderVolume, captureVolume int) {
 	fields := map[string]string{
 		"device_message_type": eventType,
 		"update_date":         time.Now().UTC().Format(time.RFC3339),
 	}
-	if flowType != "" {
-		fields["flow_type"] = flowType
-	}
-	if name != "" {
-		fields["name"] = name
-	}
-	if pnpID != "" {
-		fields["pnp_id"] = pnpID
-	}
-	if renderVolume != nil {
-		fields["render_volume"] = strconv.Itoa(*renderVolume)
-	}
-	if captureVolume != nil {
-		fields["capture_volume"] = strconv.Itoa(*captureVolume)
-	}
+
+	fields["flow_type"] = flowType
+	fields["name"] = name
+	fields["pnp_id"] = pnpID
+	fields["render_volume"] = strconv.Itoa(renderVolume)
+	fields["capture_volume"] = strconv.Itoa(captureVolume)
 
 	enqueue("post_device", fields)
 }
@@ -120,7 +111,7 @@ func Run(ctx context.Context) error {
 			if desc, err := soundlibwrap.GetDefaultRender(SaaHandle); err == nil {
 				renderVolume := int(desc.RenderVolume)
 				captureVolume := int(desc.CaptureVolume)
-				postDeviceToApi(enqueue, eventDefaultRenderChanged, flowRender, desc.Name, desc.PnpID, &renderVolume, &captureVolume)
+				postDeviceToApi(enqueue, eventDefaultRenderChanged, flowRender, desc.Name, desc.PnpID, renderVolume, captureVolume)
 				logInfo("Render device changed: name=%q pnpId=%q renderVol=%d captureVol=%d", desc.Name, desc.PnpID, desc.RenderVolume, desc.CaptureVolume)
 			} else {
 				logError("Render device changed, can not read it: %v", err)
@@ -136,7 +127,7 @@ func Run(ctx context.Context) error {
 			if desc, err := soundlibwrap.GetDefaultCapture(SaaHandle); err == nil {
 				renderVolume := int(desc.RenderVolume)
 				captureVolume := int(desc.CaptureVolume)
-				postDeviceToApi(enqueue, eventDefaultCaptureChanged, flowCapture, desc.Name, desc.PnpID, &renderVolume, &captureVolume)
+				postDeviceToApi(enqueue, eventDefaultCaptureChanged, flowCapture, desc.Name, desc.PnpID, renderVolume, captureVolume)
 				logInfo("Capture device changed: name=%q pnpId=%q renderVol=%d captureVol=%d", desc.Name, desc.PnpID, desc.RenderVolume, desc.CaptureVolume)
 			} else {
 				logError("Capture device changed, can not read it: %v", err)
