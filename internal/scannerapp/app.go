@@ -119,13 +119,14 @@ func Run(ctx context.Context) error {
 		if present {
 			if desc, err := soundlibwrap.GetDefaultRender(SaaHandle); err == nil {
 				renderVolume := int(desc.RenderVolume)
-				postDeviceToApi(enqueue, eventDefaultRenderChanged, flowRender, desc.Name, desc.PnpID, &renderVolume, nil)
-				logInfo("Render device changed: name=%q pnpId=%q vol=%d", desc.Name, desc.PnpID, desc.RenderVolume)
+				captureVolume := int(desc.CaptureVolume)
+				postDeviceToApi(enqueue, eventDefaultRenderChanged, flowRender, desc.Name, desc.PnpID, &renderVolume, &captureVolume)
+				logInfo("Render device changed: name=%q pnpId=%q renderVol=%d captureVol=%d", desc.Name, desc.PnpID, desc.RenderVolume, desc.CaptureVolume)
 			} else {
 				logError("Render device changed, can not read it: %v", err)
 			}
 		} else {
-			postDeviceToApi(enqueue, eventDefaultRenderRemoved, flowRender, "", "", nil, nil)
+			// not yet implemented removeDeviceToApi
 			logInfo("Render device removed")
 		}
 
@@ -133,14 +134,15 @@ func Run(ctx context.Context) error {
 	soundlibwrap.SetDefaultCaptureHandler(func(present bool) {
 		if present {
 			if desc, err := soundlibwrap.GetDefaultCapture(SaaHandle); err == nil {
+				renderVolume := int(desc.RenderVolume)
 				captureVolume := int(desc.CaptureVolume)
-				postDeviceToApi(enqueue, eventDefaultCaptureChanged, flowCapture, desc.Name, desc.PnpID, nil, &captureVolume)
-				logInfo("Capture device changed: name=%q pnpId=%q vol=%d", desc.Name, desc.PnpID, desc.RenderVolume)
+				postDeviceToApi(enqueue, eventDefaultCaptureChanged, flowCapture, desc.Name, desc.PnpID, &renderVolume, &captureVolume)
+				logInfo("Capture device changed: name=%q pnpId=%q renderVol=%d captureVol=%d", desc.Name, desc.PnpID, desc.RenderVolume, desc.CaptureVolume)
 			} else {
 				logError("Capture device changed, can not read it: %v", err)
 			}
 		} else {
-			postDeviceToApi(enqueue, eventDefaultCaptureRemoved, flowCapture, "", "", nil, nil)
+			// not yet implemented removeDeviceToApi
 			logInfo("Capture device removed")
 		}
 	})
