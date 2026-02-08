@@ -173,11 +173,12 @@ func Run(ctx context.Context) error {
 		return err
 	}
 
-	// Print the default render and capture devices.
+	// Post the default render and capture devices.
 	if desc, err := soundlibwrap.GetDefaultRender(SaaHandle); err == nil {
 		if desc.PnpID == "" {
 			logInfo("No default render device.")
 		} else {
+			postDeviceToApi(enqueue, eventDefaultRenderChanged, flowRender, desc.Name, desc.PnpID, int(desc.RenderVolume), int(desc.CaptureVolume))
 			logInfo("Render device info: name=%q pnpId=%q vol=%d", desc.Name, desc.PnpID, desc.RenderVolume)
 		}
 	} else {
@@ -187,6 +188,7 @@ func Run(ctx context.Context) error {
 		if desc.PnpID == "" {
 			logInfo("No default capture device.")
 		} else {
+			postDeviceToApi(enqueue, eventDefaultCaptureChanged, flowCapture, desc.Name, desc.PnpID, int(desc.RenderVolume), int(desc.CaptureVolume))
 			logInfo("Capture device info: name=%q pnpId=%q vol=%d", desc.Name, desc.PnpID, desc.RenderVolume)
 		}
 	} else {
