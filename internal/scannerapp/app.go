@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/collect-sound-devices/win-sound-dev-go-bridge/internal/enqueuer"
+	"github.com/collect-sound-devices/win-sound-dev-go-bridge/internal/scannerapp/impl"
 
 	"github.com/collect-sound-devices/sound-win-scanner/v4/pkg/soundlibwrap"
 )
@@ -39,6 +40,10 @@ func logError(format string, v ...interface{}) {
 	logf("error", format, v...)
 }
 
+func New(enqueue func(string, map[string]string)) (ScannerApp, error) {
+	return impl.New(enqueue, logInfo, logError)
+}
+
 func Run(ctx context.Context) error {
 	reqEnqueuer := enqueuer.NewEmptyRequestEnqueuer(logger)
 	enqueue := func(name string, fields map[string]string) {
@@ -49,10 +54,6 @@ func Run(ctx context.Context) error {
 		}); err != nil {
 			logError("enqueue failed: %v", err)
 		}
-	}
-
-	app := &ScannerApp{
-		enqueueFunc: enqueue,
 	}
 
 	{
@@ -75,36 +76,17 @@ func Run(ctx context.Context) error {
 		})
 	}
 
-	app.attachHandlers()
-
 	logInfo("Initializing...")
 
-	if err := app.init(); err != nil {
+	app, err := New(enqueue)
+	if err != nil {
 		return err
 	}
-	defer app.shutdown()
+	defer app.Shutdown()
 
 	// Post the default render and capture devices.
-	if desc, err := soundlibwrap.GetDefaultRender(app.soundLibHandle); err == nil {
-		if desc.PnpID == "" {
-			logInfo("No default render device.")
-		} else {
-			app.postDeviceToApi(eventDefaultRenderChanged, flowRender, desc.Name, desc.PnpID, int(desc.RenderVolume), int(desc.CaptureVolume))
-			logInfo("Render device info: name=%q pnpId=%q vol=%d", desc.Name, desc.PnpID, desc.RenderVolume)
-		}
-	} else {
-		logError("Render device info, can not read it: %v", err)
-	}
-	if desc, err := soundlibwrap.GetDefaultCapture(app.soundLibHandle); err == nil {
-		if desc.PnpID == "" {
-			logInfo("No default capture device.")
-		} else {
-			app.postDeviceToApi(eventDefaultCaptureChanged, flowCapture, desc.Name, desc.PnpID, int(desc.RenderVolume), int(desc.CaptureVolume))
-			logInfo("Capture device info: name=%q pnpId=%q vol=%d", desc.Name, desc.PnpID, desc.RenderVolume)
-		}
-	} else {
-		logError("Capture device info, can not read it: %v", err)
-	}
+	app.RepostRenderDeviceToApi()
+	app.RepostCaptureDeviceToApi()
 
 	// Keep running until interrupted to receive async logs and change events.
 	<-ctx.Done()
