@@ -7,10 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/collect-sound-devices/win-sound-dev-go-bridge/internal/enqueuer"
-	"github.com/collect-sound-devices/win-sound-dev-go-bridge/internal/scannerapp/impl"
-
 	"github.com/collect-sound-devices/sound-win-scanner/v4/pkg/soundlibwrap"
+	"github.com/collect-sound-devices/win-sound-dev-go-bridge/internal/enqueuer"
 )
 
 var logger = log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lmicroseconds)
@@ -31,7 +29,7 @@ func logError(format string, v ...interface{}) {
 }
 
 func New(enqueue func(string, map[string]string)) (ScannerApp, error) {
-	return impl.New(enqueue, logInfo, logError)
+	return NewImpl(enqueue, logInfo, logError)
 }
 
 func Run(ctx context.Context) error {
