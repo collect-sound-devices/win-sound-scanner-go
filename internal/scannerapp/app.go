@@ -15,16 +15,6 @@ import (
 
 var logger = log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lmicroseconds)
 
-const (
-	eventDefaultRenderChanged  = "default_render_changed"
-	eventDefaultCaptureChanged = "default_capture_changed"
-	eventRenderVolumeChanged   = "render_volume_changed"
-	eventCaptureVolumeChanged  = "capture_volume_changed"
-
-	flowRender  = "render"
-	flowCapture = "capture"
-)
-
 func logf(level, format string, v ...interface{}) {
 	if level == "" {
 		level = "info"
