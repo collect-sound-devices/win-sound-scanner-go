@@ -24,18 +24,30 @@ go build -o (Join-Path $PWD.Path 'bin/win-sound-logger.exe') ./cmd/win-sound-log
 go build -o (Join-Path $PWD.Path 'bin/win-sound-scanner.exe') ./cmd/win-sound-scanner
 ```
 
+Alternative: run `.\scripts\build.ps1` (or `.\scripts\build.ps1 -m ""`).
+
 ## Run
 ```powershell
 .\bin\win-sound-logger.exe
 .\bin\win-sound-scanner.exe
 ```
+## Debug
+Compile with -gcflags=all="-N -l" to disable optimizations and inlining, then run with a debugger
+```powershell
+go build -gcflags "all=-N -l" -o (Join-Path $PWD.Path 'bin/win-sound-scanner.exe') ./cmd/win-sound-scanner
+dlv --listen=:2345 --headless=true --api-version=2 --accept-multiclient exec ./bin/win-sound-scanner.exe
+```
+Then use remote debugging in your IDE (e.g. GoLand) to connect to localhost:2345
 
 ## External module
 - github.com/collect-sound-devices/sound-win-scanner/v4 (pkg/soundlibwrap): cgo wrapper around SoundAgentApi, see [soundlibwrap documentation](https://pkg.go.dev/github.com/collect-sound-devices/sound-win-scanner/v4/pkg/soundlibwrap)
 
-## Advanced
-You can use  clang instead of gcc:
-```bat
-set CC=...x86_64-w64-mingw32-clang
-set CXX=...x86_64-w64-mingw32-clang++
-```
+## License
+
+This project is licensed under the terms of the [MIT License](LICENSE).
+
+## Contact
+
+Eduard Danziger
+
+Email: [edanziger@gmx.de](mailto:edanziger@gmx.de)
