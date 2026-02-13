@@ -19,16 +19,16 @@ const (
 )
 
 var snakeToCamelField = map[string]string{
-	"device_message_type":  "deviceMessageType",
-	"update_date":          "updateDate",
-	"flow_type":            "flowType",
-	"pnp_id":               "pnpId",
-	"render_volume":        "renderVolume",
-	"capture_volume":       "captureVolume",
-	"host_name":            "hostName",
+	"device_message_type":   "deviceMessageType",
+	"update_date":           "updateDate",
+	"flow_type":             "flowType",
+	"pnp_id":                "pnpId",
+	"render_volume":         "renderVolume",
+	"capture_volume":        "captureVolume",
+	"host_name":             "hostName",
 	"operation_system_name": "operationSystemName",
-	"http_request":         fieldHttpRequest,
-	"url_suffix":           fieldURLSuffix,
+	"http_request":          fieldHttpRequest,
+	"url_suffix":            fieldURLSuffix,
 }
 
 // RabbitMessagePublisher is the publish contract expected from a RabbitMQ publisher.
@@ -38,7 +38,6 @@ type RabbitMessagePublisher interface {
 }
 
 // RabbitMqEnqueuer writes requests to RabbitMQ using the same message-shaping
-// approach as SoundWinAgent's RabbitMqHttpRequestDispatcher.
 type RabbitMqEnqueuer struct {
 	publisher        RabbitMessagePublisher
 	logger           logging.Logger

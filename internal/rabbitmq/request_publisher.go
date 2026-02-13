@@ -156,7 +156,8 @@ func (p *RequestPublisher) connectOnceLocked() error {
 	conn, err := amqp.DialConfig(
 		amqp.URI{
 			Scheme:   "amqp",
-			Host:     fmt.Sprintf("%s:%d", p.cfg.Host, p.cfg.Port),
+			Host:     p.cfg.Host,
+			Port:     p.cfg.Port,
 			Username: p.cfg.User,
 			Password: p.cfg.Password,
 			Vhost:    p.cfg.VHost,

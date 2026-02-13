@@ -2,6 +2,7 @@ package rabbitmq
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -61,6 +62,14 @@ func DefaultConfig() Config {
 
 func (c Config) withDefaults() Config {
 	d := DefaultConfig()
+
+	if host, port, ok := splitHostPort(c.Host); ok {
+		c.Host = host
+		if c.Port <= 0 || c.Port == d.Port {
+			c.Port = port
+		}
+	}
+
 	if strings.TrimSpace(c.Host) == "" {
 		c.Host = d.Host
 	}
@@ -103,6 +112,7 @@ func (c Config) withDefaults() Config {
 	if c.MaxReconnectDelay < c.InitialReconnectDelay {
 		c.MaxReconnectDelay = c.InitialReconnectDelay
 	}
+
 	return c
 }
 
@@ -151,6 +161,9 @@ func LoadConfigFromEnv() (Config, error) {
 		if err != nil {
 			return Config{}, fmt.Errorf("invalid WIN_SOUND_RABBITMQ_MAX_RECONNECT_ATTEMPTS %q: %w", v, err)
 		}
+		if n < 0 {
+			return Config{}, fmt.Errorf("WIN_SOUND_RABBITMQ_MAX_RECONNECT_ATTEMPTS can not be negative %q", v)
+		}
 		cfg.MaxReconnectionAttempts = n
 	}
 	if v := strings.TrimSpace(os.Getenv("WIN_SOUND_RABBITMQ_INITIAL_RECONNECT_DELAY_MS")); v != "" {
@@ -165,6 +178,9 @@ func LoadConfigFromEnv() (Config, error) {
 		if err != nil {
 			return Config{}, fmt.Errorf("invalid WIN_SOUND_RABBITMQ_MAX_RECONNECT_DELAY_MS %q: %w", v, err)
 		}
+		if n < 0 {
+			return Config{}, fmt.Errorf("WIN_SOUND_RABBITMQ_MAX_RECONNECT_DELAY_MS can not be negative %q", v)
+		}
 		cfg.MaxReconnectDelay = time.Duration(n) * time.Millisecond
 	}
 	if v := strings.TrimSpace(os.Getenv("WIN_SOUND_RABBITMQ_PUBLISH_CONFIRM_TIMEOUT_MS")); v != "" {
@@ -172,8 +188,24 @@ func LoadConfigFromEnv() (Config, error) {
 		if err != nil {
 			return Config{}, fmt.Errorf("invalid WIN_SOUND_RABBITMQ_PUBLISH_CONFIRM_TIMEOUT_MS %q: %w", v, err)
 		}
+		if n < 0 {
+			return Config{}, fmt.Errorf("WIN_SOUND_RABBITMQ_PUBLISH_CONFIRM_TIMEOUT_MS can not be negative %q", v)
+		}
 		cfg.PublishConfirmTimeout = time.Duration(n) * time.Millisecond
 	}
 
 	return cfg.withDefaults(), nil
+}
+
+func splitHostPort(raw string) (string, int, bool) {
+	host, portText, err := net.SplitHostPort(strings.TrimSpace(raw))
+	if err != nil {
+		return "", 0, false
+	}
+
+	port, err := strconv.Atoi(portText)
+	if err != nil || port <= 0 {
+		return "", 0, false
+	}
+	return host, port, true
 }
