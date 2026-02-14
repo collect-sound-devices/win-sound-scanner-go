@@ -24,25 +24,16 @@ func NewPlainLogger() *log.Logger {
 }
 
 func PrintInfo(logger Logger, format string, v ...interface{}) {
-	if logger == nil {
-		return
-	}
 	logger.Printf("[info] "+format, v...)
 }
 
 func PrintError(logger Logger, format string, v ...interface{}) {
-	if logger == nil {
-		return
-	}
 	logger.Printf("[error] "+format, v...)
 }
 
 // AttachSoundlibwrapBridge forwards soundlibwrap log messages into the provided logger.
 // The logger should typically have no flags/prefix so the embedded timestamp is preserved.
 func AttachSoundlibwrapBridge(logger Logger, prefix string) {
-	if logger == nil {
-		return
-	}
 	if prefix == "" {
 		prefix = "cpp backend"
 	}

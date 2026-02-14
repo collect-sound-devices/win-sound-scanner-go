@@ -52,6 +52,16 @@ func NewRabbitMqEnqueuer(publisher RabbitMessagePublisher, logger logging.Logger
 }
 
 func NewRabbitMqEnqueuerWithContext(baseCtx context.Context, publisher RabbitMessagePublisher, logger logging.Logger) *RabbitMqEnqueuer {
+	if baseCtx == nil {
+		panic("nil context")
+	}
+	if publisher == nil {
+		panic("nil publisher")
+	}
+	if logger == nil {
+		panic("nil logger")
+	}
+
 	hostName, err := os.Hostname()
 	if err != nil || strings.TrimSpace(hostName) == "" {
 		hostName = "unknown-host"
@@ -74,9 +84,6 @@ func newRabbitMqEnqueuer(
 	operationSysName string,
 	publishTimeout time.Duration,
 ) *RabbitMqEnqueuer {
-	if baseCtx == nil {
-		baseCtx = context.Background()
-	}
 	if strings.TrimSpace(hostName) == "" {
 		hostName = "unknown-host"
 	}
@@ -98,10 +105,6 @@ func newRabbitMqEnqueuer(
 }
 
 func (e *RabbitMqEnqueuer) EnqueueRequest(request Request) error {
-	if e == nil || e.publisher == nil {
-		return fmt.Errorf("rabbit mq enqueuer is not initialized")
-	}
-
 	payload := make(map[string]any, len(request.Fields)+4)
 	for key, value := range request.Fields {
 		mappedKey := mapFieldName(key)
@@ -141,9 +144,6 @@ func (e *RabbitMqEnqueuer) EnqueueRequest(request Request) error {
 }
 
 func (e *RabbitMqEnqueuer) Close() error {
-	if e == nil || e.publisher == nil {
-		return nil
-	}
 	return e.publisher.Close()
 }
 
@@ -198,8 +198,5 @@ func mapFieldName(in string) string {
 }
 
 func (e *RabbitMqEnqueuer) logf(format string, args ...interface{}) {
-	if e == nil || e.logger == nil {
-		return
-	}
 	e.logger.Printf(format, args...)
 }

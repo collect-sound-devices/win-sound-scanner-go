@@ -7,13 +7,13 @@ type EmptyRequestEnqueuer struct {
 }
 
 func NewEmptyRequestEnqueuer(logger logging.Logger) *EmptyRequestEnqueuer {
+	if logger == nil {
+		panic("nil logger")
+	}
 	return &EmptyRequestEnqueuer{logger: logger}
 }
 
 func (e *EmptyRequestEnqueuer) EnqueueRequest(request Request) error {
-	if e == nil || e.logger == nil {
-		return nil
-	}
 	e.logger.Printf("[info, empty enqueuer] name=%s fields=%v", request.Name, request.Fields)
 	return nil
 }

@@ -13,6 +13,10 @@ type testPublisher struct {
 	pubErr   error
 }
 
+type testLogger struct{}
+
+func (l testLogger) Printf(string, ...interface{}) {}
+
 func (p *testPublisher) Publish(_ context.Context, body []byte) error {
 	p.calls++
 	p.lastBody = append([]byte(nil), body...)
@@ -25,7 +29,7 @@ func (p *testPublisher) Close() error {
 
 func TestRabbitMqEnqueuerPostDevice(t *testing.T) {
 	pub := &testPublisher{}
-	enq := newRabbitMqEnqueuer(context.Background(), pub, nil, "hostA", "windows", time.Second)
+	enq := newRabbitMqEnqueuer(context.Background(), pub, testLogger{}, "hostA", "windows", time.Second)
 
 	err := enq.EnqueueRequest(Request{
 		Name:      "post_device",
@@ -75,7 +79,7 @@ func TestRabbitMqEnqueuerPostDevice(t *testing.T) {
 
 func TestRabbitMqEnqueuerPutVolumeChange(t *testing.T) {
 	pub := &testPublisher{}
-	enq := newRabbitMqEnqueuer(context.Background(), pub, nil, "myHost", "windows", time.Second)
+	enq := newRabbitMqEnqueuer(context.Background(), pub, testLogger{}, "myHost", "windows", time.Second)
 
 	err := enq.EnqueueRequest(Request{
 		Name:      "put_volume_change",

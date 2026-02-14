@@ -32,7 +32,10 @@ func NewRequestPublisher(cfg Config, logger Logger) (*RequestPublisher, error) {
 
 func NewRequestPublisherWithContext(ctx context.Context, cfg Config, logger Logger) (*RequestPublisher, error) {
 	if ctx == nil {
-		ctx = context.Background()
+		panic("nil context")
+	}
+	if logger == nil {
+		panic("nil logger")
 	}
 
 	cfg = cfg.withDefaults()
@@ -53,7 +56,7 @@ func (p *RequestPublisher) Publish(ctx context.Context, body []byte) error {
 	defer p.mu.Unlock()
 
 	if ctx == nil {
-		ctx = context.Background()
+		panic("nil context")
 	}
 
 	if p.ch == nil {
@@ -137,10 +140,6 @@ func (p *RequestPublisher) publishLocked(ctx context.Context, body []byte) error
 }
 
 func (p *RequestPublisher) connectWithRetryLocked(ctx context.Context) error {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
 	var lastErr error
 	delay := p.cfg.InitialReconnectDelay
 
@@ -266,9 +265,6 @@ func (p *RequestPublisher) closeLocked() error {
 }
 
 func (p *RequestPublisher) logf(format string, v ...interface{}) {
-	if p.logger == nil {
-		return
-	}
 	p.logger.Printf(format, v...)
 }
 
