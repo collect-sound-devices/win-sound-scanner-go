@@ -14,13 +14,11 @@ $Env:CGO_ENABLED = "1"
 $Env:CC = "E:\tools\llvm-mingw\bin\x86_64-w64-mingw32-clang.exe"
 $Env:CXX = "E:\tools\llvm-mingw\bin\x86_64-w64-mingw32-clang++.exe"
 
-go build -o (Join-Path $PWD.Path 'bin/win-sound-logger.exe') ./cmd/win-sound-logger
 go build -o (Join-Path $PWD.Path 'bin/win-sound-scanner.exe') ./cmd/win-sound-scanner
 
 .\scripts\fetch-native.ps1
 
 ## once more
-go build -o (Join-Path $PWD.Path 'bin/win-sound-logger.exe') ./cmd/win-sound-logger
 go build -o (Join-Path $PWD.Path 'bin/win-sound-scanner.exe') ./cmd/win-sound-scanner
 ```
 
@@ -28,9 +26,26 @@ Alternative: run `.\scripts\build.ps1` (or `.\scripts\build.ps1 -m ""`).
 
 ## Run
 ```powershell
-.\bin\win-sound-logger.exe
 .\bin\win-sound-scanner.exe
 ```
+
+## RabbitMQ Mode (scanner)
+By default, scanner uses the RabbitMQ-enqueuer (`WIN_SOUND_ENQUEUER=rabbitmq`).
+To disable request publishing to RabbitMQ, set it to `empty`:
+```powershell
+$Env:WIN_SOUND_ENQUEUER = "empty"
+
+# Optional overrides (defaults shown)
+$Env:WIN_SOUND_RABBITMQ_HOST = "localhost"
+$Env:WIN_SOUND_RABBITMQ_PORT = "5672"
+$Env:WIN_SOUND_RABBITMQ_VHOST = "/"
+$Env:WIN_SOUND_RABBITMQ_USER = "guest"
+$Env:WIN_SOUND_RABBITMQ_PASSWORD = "guest"
+$Env:WIN_SOUND_RABBITMQ_EXCHANGE = "sdr_exchange"
+$Env:WIN_SOUND_RABBITMQ_QUEUE = "sdr_queue"
+$Env:WIN_SOUND_RABBITMQ_ROUTING_KEY = "sdr_bind"
+```
+
 ## Debug
 Compile with -gcflags=all="-N -l" to disable optimizations and inlining, then run with a debugger
 ```powershell
