@@ -92,12 +92,13 @@ func (e *RabbitMqEnqueuer) EnqueueRequest(request Request) error {
 	for key, value := range request.Fields {
 		payload[key] = normalizeValue(key, value)
 	}
+	payload[contract.FieldDeviceMessageType] = request.Event
 
 	httpRequest, urlSuffix := e.resolveHttpRequest(request, payload)
 	payload[contract.FieldHTTPRequest] = httpRequest
 	payload[contract.FieldURLSuffix] = urlSuffix
 
-	if request.Name == contract.RequestPostDevice {
+	if httpRequest == "POST" {
 		if _, ok := payload[contract.FieldHostName]; !ok {
 			payload[contract.FieldHostName] = e.hostName
 		}
@@ -114,12 +115,12 @@ func (e *RabbitMqEnqueuer) EnqueueRequest(request Request) error {
 		return fmt.Errorf("marshal rabbitmq payload: %w", err)
 	}
 
-	e.logf("[info, rabbitmq enqueuer] publishing name=%s method=%s urlSuffix=%s", request.Name, httpRequest, urlSuffix)
+	e.logf("[info, rabbitmq enqueuer] publishing method=%s urlSuffix=%s", httpRequest, urlSuffix)
 
 	ctx, cancel := context.WithTimeout(e.baseCtx, e.publishTimeout)
 	defer cancel()
 	if err := e.publisher.Publish(ctx, body); err != nil {
-		return fmt.Errorf("publish request %q: %w", request.Name, err)
+		return fmt.Errorf("publish request: %w", err)
 	}
 
 	return nil
@@ -130,14 +131,13 @@ func (e *RabbitMqEnqueuer) Close() error {
 }
 
 func (e *RabbitMqEnqueuer) resolveHttpRequest(request Request, payload map[string]any) (string, string) {
-	httpRequest := readStringField(payload, contract.FieldHTTPRequest)
-	if httpRequest == "" {
-		switch strings.ToLower(strings.TrimSpace(request.Name)) {
-		case contract.RequestPutVolumeChange:
-			httpRequest = "PUT"
-		default:
-			httpRequest = "POST"
-		}
+	messageType := readEventTypeField(payload, contract.FieldDeviceMessageType)
+	var httpRequest string
+	switch messageType {
+	case contract.EventTypeDefaultRenderChanged, contract.EventTypeDefaultCaptureChanged:
+		httpRequest = "POST"
+	default:
+		httpRequest = "PUT"
 	}
 
 	urlSuffix := readStringField(payload, contract.FieldURLSuffix)
@@ -157,6 +157,22 @@ func readStringField(payload map[string]any, key string) string {
 		}
 	}
 	return ""
+}
+
+func readEventTypeField(payload map[string]any, key string) contract.SoundDeviceEventType {
+	if v, ok := payload[key]; ok {
+		switch value := v.(type) {
+		case contract.SoundDeviceEventType:
+			return value
+		case uint8:
+			return contract.SoundDeviceEventType(value)
+		case int:
+			if value >= 0 && value <= int(^uint8(0)) {
+				return contract.SoundDeviceEventType(uint8(value))
+			}
+		}
+	}
+	return 0
 }
 
 func normalizeValue(key string, value string) any {

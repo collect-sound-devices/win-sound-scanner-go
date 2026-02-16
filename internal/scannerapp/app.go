@@ -12,7 +12,7 @@ import (
 	"github.com/collect-sound-devices/win-sound-dev-go-bridge/internal/rabbitmq"
 )
 
-func NewWithLogger(enqueue func(string, map[string]string), logger logging.Logger) (ScannerApp, error) {
+func NewWithLogger(enqueue func(uint8, map[string]string), logger logging.Logger) (ScannerApp, error) {
 	return NewImpl(
 		enqueue,
 		func(format string, v ...interface{}) { logging.PrintInfo(logger, format, v...) },
@@ -28,10 +28,10 @@ func Run(ctx context.Context) error {
 	}
 	defer cleanupEnqueuer()
 
-	enqueue := func(name string, fields map[string]string) {
+	enqueue := func(event uint8, fields map[string]string) {
 		if err := reqEnqueuer.EnqueueRequest(enqueuer.Request{
-			Name:      name,
 			Timestamp: time.Now(),
+			Event:     event,
 			Fields:    fields,
 		}); err != nil {
 			logging.PrintError(appLogger, "enqueue failed: %v", err)

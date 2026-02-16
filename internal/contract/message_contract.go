@@ -1,5 +1,14 @@
 package contract
 
+type SoundDeviceEventType uint8
+
+const (
+	EventTypeVolumeRenderChanged   SoundDeviceEventType = 3
+	EventTypeVolumeCaptureChanged  SoundDeviceEventType = 4
+	EventTypeDefaultRenderChanged  SoundDeviceEventType = 5
+	EventTypeDefaultCaptureChanged SoundDeviceEventType = 6
+)
+
 const (
 	RequestPostDevice      = "post_device"
 	RequestPutVolumeChange = "put_volume_change"

@@ -3,8 +3,8 @@ package enqueuer
 import "time"
 
 type Request struct {
-	Name      string
 	Timestamp time.Time
+	Event     uint8
 	Fields    map[string]string
 }
 

@@ -14,6 +14,6 @@ func NewEmptyRequestEnqueuer(logger logging.Logger) *EmptyRequestEnqueuer {
 }
 
 func (e *EmptyRequestEnqueuer) EnqueueRequest(request Request) error {
-	e.logger.Printf("[info, empty enqueuer] name=%s fields=%v", request.Name, request.Fields)
+	e.logger.Printf("[info, empty enqueuer] fields=%v", request.Fields)
 	return nil
 }
