@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"testing"
 	"time"
+
+	"github.com/collect-sound-devices/win-sound-dev-go-bridge/internal/contract"
 )
 
 type testPublisher struct {
@@ -32,16 +34,16 @@ func TestRabbitMqEnqueuerPostDevice(t *testing.T) {
 	enq := newRabbitMqEnqueuer(context.Background(), pub, testLogger{}, "hostA", "windows", time.Second)
 
 	err := enq.EnqueueRequest(Request{
-		Name:      "post_device",
+		Name:      contract.RequestPostDevice,
 		Timestamp: time.Date(2026, 2, 10, 9, 8, 7, 0, time.UTC),
 		Fields: map[string]string{
-			"device_message_type": "default_render_changed",
-			"update_date":         "2026-02-10T09:08:07Z",
-			"flow_type":           "render",
-			"name":                "Speaker",
-			"pnp_id":              "PNP-1",
-			"render_volume":       "32",
-			"capture_volume":      "0",
+			contract.FieldDeviceMessageType: contract.EventDefaultRenderChanged,
+			contract.FieldUpdateDate:        "2026-02-10T09:08:07Z",
+			contract.FieldFlowType:          contract.FlowRender,
+			contract.FieldName:              "Speaker",
+			contract.FieldPnpID:             "PNP-1",
+			contract.FieldRenderVolume:      "32",
+			contract.FieldCaptureVolume:     "0",
 		},
 	})
 	if err != nil {
@@ -57,23 +59,23 @@ func TestRabbitMqEnqueuerPostDevice(t *testing.T) {
 		t.Fatalf("unmarshal payload: %v", err)
 	}
 
-	if got["httpRequest"] != "POST" {
-		t.Fatalf("expected httpRequest=POST, got %#v", got["httpRequest"])
+	if got[contract.FieldHTTPRequestCamel] != "POST" {
+		t.Fatalf("expected httpRequest=POST, got %#v", got[contract.FieldHTTPRequestCamel])
 	}
-	if got["urlSuffix"] != "" {
-		t.Fatalf("expected empty urlSuffix, got %#v", got["urlSuffix"])
+	if got[contract.FieldURLSuffixCamel] != "" {
+		t.Fatalf("expected empty urlSuffix, got %#v", got[contract.FieldURLSuffixCamel])
 	}
-	if got["hostName"] != "hostA" {
-		t.Fatalf("expected hostName=hostA, got %#v", got["hostName"])
+	if got[contract.FieldHostNameCamel] != "hostA" {
+		t.Fatalf("expected hostName=hostA, got %#v", got[contract.FieldHostNameCamel])
 	}
-	if got["operationSystemName"] != "windows" {
-		t.Fatalf("expected operationSystemName=windows, got %#v", got["operationSystemName"])
+	if got[contract.FieldOperationSystemNameCamel] != "windows" {
+		t.Fatalf("expected operationSystemName=windows, got %#v", got[contract.FieldOperationSystemNameCamel])
 	}
-	if got["renderVolume"] != float64(32) {
-		t.Fatalf("expected renderVolume=32, got %#v", got["renderVolume"])
+	if got[contract.FieldRenderVolumeCamel] != float64(32) {
+		t.Fatalf("expected renderVolume=32, got %#v", got[contract.FieldRenderVolumeCamel])
 	}
-	if got["captureVolume"] != float64(0) {
-		t.Fatalf("expected captureVolume=0, got %#v", got["captureVolume"])
+	if got[contract.FieldCaptureVolumeCamel] != float64(0) {
+		t.Fatalf("expected captureVolume=0, got %#v", got[contract.FieldCaptureVolumeCamel])
 	}
 }
 
@@ -82,12 +84,12 @@ func TestRabbitMqEnqueuerPutVolumeChange(t *testing.T) {
 	enq := newRabbitMqEnqueuer(context.Background(), pub, testLogger{}, "myHost", "windows", time.Second)
 
 	err := enq.EnqueueRequest(Request{
-		Name:      "put_volume_change",
+		Name:      contract.RequestPutVolumeChange,
 		Timestamp: time.Date(2026, 2, 10, 9, 8, 7, 0, time.UTC),
 		Fields: map[string]string{
-			"device_message_type": "render_volume_changed",
-			"volume":              "44",
-			"pnp_id":              "DEV-22",
+			contract.FieldDeviceMessageType: contract.EventRenderVolumeChanged,
+			contract.FieldVolume:            "44",
+			contract.FieldPnpID:             "DEV-22",
 		},
 	})
 	if err != nil {
@@ -99,16 +101,16 @@ func TestRabbitMqEnqueuerPutVolumeChange(t *testing.T) {
 		t.Fatalf("unmarshal payload: %v", err)
 	}
 
-	if got["httpRequest"] != "PUT" {
-		t.Fatalf("expected httpRequest=PUT, got %#v", got["httpRequest"])
+	if got[contract.FieldHTTPRequestCamel] != "PUT" {
+		t.Fatalf("expected httpRequest=PUT, got %#v", got[contract.FieldHTTPRequestCamel])
 	}
-	if got["urlSuffix"] != "/DEV-22/myHost" {
-		t.Fatalf("expected urlSuffix=/DEV-22/myHost, got %#v", got["urlSuffix"])
+	if got[contract.FieldURLSuffixCamel] != "/DEV-22/myHost" {
+		t.Fatalf("expected urlSuffix=/DEV-22/myHost, got %#v", got[contract.FieldURLSuffixCamel])
 	}
-	if got["updateDate"] != "2026-02-10T09:08:07Z" {
-		t.Fatalf("expected fallback updateDate from timestamp, got %#v", got["updateDate"])
+	if got[contract.FieldUpdateDateCamel] != "2026-02-10T09:08:07Z" {
+		t.Fatalf("expected fallback updateDate from timestamp, got %#v", got[contract.FieldUpdateDateCamel])
 	}
-	if got["volume"] != float64(44) {
-		t.Fatalf("expected volume=44, got %#v", got["volume"])
+	if got[contract.FieldVolume] != float64(44) {
+		t.Fatalf("expected volume=44, got %#v", got[contract.FieldVolume])
 	}
 }
