@@ -129,7 +129,7 @@ func (a *scannerAppImpl) RepostCaptureDeviceToApi() {
 	}
 }
 
-func (a *scannerAppImpl) postDeviceToApi(event uint8, name, pnpID string, renderVolume, captureVolume int) {
+func (a *scannerAppImpl) postDeviceToApi(messageType uint8, name, pnpID string, renderVolume, captureVolume int) {
 	fields := map[string]string{
 		contract.FieldUpdateDate:    time.Now().UTC().Format(time.RFC3339),
 		contract.FieldName:          name,
@@ -138,5 +138,5 @@ func (a *scannerAppImpl) postDeviceToApi(event uint8, name, pnpID string, render
 		contract.FieldCaptureVolume: strconv.Itoa(captureVolume),
 	}
 
-	a.enqueueFunc(event, fields)
+	a.enqueueFunc(messageType, fields)
 }

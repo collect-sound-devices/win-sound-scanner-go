@@ -14,11 +14,6 @@ const (
 	RequestPutVolumeChange = "put_volume_change"
 )
 
-const (
-	FlowRender  = "render"
-	FlowCapture = "capture"
-)
-
 type FlowType uint8
 
 const (

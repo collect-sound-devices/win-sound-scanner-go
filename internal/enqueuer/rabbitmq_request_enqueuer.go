@@ -92,7 +92,7 @@ func (e *RabbitMqEnqueuer) EnqueueRequest(request Request) error {
 	for key, value := range request.Fields {
 		payload[key] = normalizeValue(key, value)
 	}
-	payload[contract.FieldDeviceMessageType] = request.Event
+	payload[contract.FieldDeviceMessageType] = request.MessageType
 
 	httpRequest, urlSuffix := e.resolveHttpRequest(request, payload)
 	payload[contract.FieldHTTPRequest] = httpRequest
@@ -106,7 +106,7 @@ func (e *RabbitMqEnqueuer) EnqueueRequest(request Request) error {
 			payload[contract.FieldOperationSystemName] = e.operationSysName
 		}
 
-		flowType := calculateFlowTypeField(contract.MessageType(request.Event))
+		flowType := calculateFlowTypeField(contract.MessageType(request.MessageType))
 		if flowType != 0 {
 			payload[contract.FieldFlowType] = flowType
 		}
@@ -136,7 +136,7 @@ func (e *RabbitMqEnqueuer) Close() error {
 }
 
 func (e *RabbitMqEnqueuer) resolveHttpRequest(request Request, payload map[string]any) (string, string) {
-	messageType := contract.MessageType(request.Event)
+	messageType := contract.MessageType(request.MessageType)
 	var httpRequest string
 	switch messageType {
 	case contract.MessageTypeDefaultRenderChanged, contract.MessageTypeDefaultCaptureChanged:
