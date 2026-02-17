@@ -3,9 +3,9 @@ package contract
 type MessageType uint8
 
 const (
-	MessageTypeVolumeRenderChanged  MessageType = 3
-	MessageTypeVolumeCaptureChanged MessageType = 4
-	MessageTypeDefaultRenderChanged MessageType = 5
+	MessageTypeVolumeRenderChanged   MessageType = 3
+	MessageTypeVolumeCaptureChanged  MessageType = 4
+	MessageTypeDefaultRenderChanged  MessageType = 5
 	MessageTypeDefaultCaptureChanged MessageType = 6
 )
 
@@ -17,6 +17,13 @@ const (
 const (
 	FlowRender  = "render"
 	FlowCapture = "capture"
+)
+
+type FlowType uint8
+
+const (
+	FlowTypeRender  FlowType = 1
+	FlowTypeCapture FlowType = 2
 )
 
 const (

@@ -105,6 +105,11 @@ func (e *RabbitMqEnqueuer) EnqueueRequest(request Request) error {
 		if _, ok := payload[contract.FieldOperationSystemName]; !ok {
 			payload[contract.FieldOperationSystemName] = e.operationSysName
 		}
+
+		flowType := calculateFlowTypeField(contract.MessageType(request.Event))
+		if flowType != 0 {
+			payload[contract.FieldFlowType] = flowType
+		}
 	}
 	if _, ok := payload[contract.FieldUpdateDate]; !ok && !request.Timestamp.IsZero() {
 		payload[contract.FieldUpdateDate] = request.Timestamp.UTC().Format(time.RFC3339)
@@ -131,7 +136,7 @@ func (e *RabbitMqEnqueuer) Close() error {
 }
 
 func (e *RabbitMqEnqueuer) resolveHttpRequest(request Request, payload map[string]any) (string, string) {
-	messageType := readEventTypeField(payload, contract.FieldDeviceMessageType)
+	messageType := contract.MessageType(request.Event)
 	var httpRequest string
 	switch messageType {
 	case contract.MessageTypeDefaultRenderChanged, contract.MessageTypeDefaultCaptureChanged:
@@ -159,18 +164,12 @@ func readStringField(payload map[string]any, key string) string {
 	return ""
 }
 
-func readEventTypeField(payload map[string]any, key string) contract.MessageType {
-	if v, ok := payload[key]; ok {
-		switch value := v.(type) {
-		case contract.MessageType:
-			return value
-		case uint8:
-			return contract.MessageType(value)
-		case int:
-			if value >= 0 && value <= int(^uint8(0)) {
-				return contract.MessageType(uint8(value))
-			}
-		}
+func calculateFlowTypeField(messageType contract.MessageType) contract.FlowType {
+	switch messageType {
+	case contract.MessageTypeDefaultRenderChanged, contract.MessageTypeVolumeRenderChanged:
+		return contract.FlowTypeRender
+	case contract.MessageTypeDefaultCaptureChanged, contract.MessageTypeVolumeCaptureChanged:
+		return contract.FlowTypeCapture
 	}
 	return 0
 }

@@ -111,7 +111,7 @@ func (a *scannerAppImpl) RepostRenderDeviceToApi() {
 	if desc, err := soundlibwrap.GetDefaultRender(a.soundLibHandle); err == nil {
 		renderVolume := int(desc.RenderVolume)
 		captureVolume := int(desc.CaptureVolume)
-		a.postDeviceToApi(uint8(contract.MessageTypeDefaultRenderChanged), contract.FlowRender, desc.Name, desc.PnpID, renderVolume, captureVolume)
+		a.postDeviceToApi(uint8(contract.MessageTypeDefaultRenderChanged), desc.Name, desc.PnpID, renderVolume, captureVolume)
 		a.logInfo("Render device identified and updated: name=%q pnpId=%q renderVol=%d captureVol=%d", desc.Name, desc.PnpID, desc.RenderVolume, desc.CaptureVolume)
 	} else {
 		a.logError("Render device can not be identified: %v", err)
@@ -122,17 +122,16 @@ func (a *scannerAppImpl) RepostCaptureDeviceToApi() {
 	if desc, err := soundlibwrap.GetDefaultCapture(a.soundLibHandle); err == nil {
 		renderVolume := int(desc.RenderVolume)
 		captureVolume := int(desc.CaptureVolume)
-		a.postDeviceToApi(uint8(contract.MessageTypeDefaultCaptureChanged), contract.FlowCapture, desc.Name, desc.PnpID, renderVolume, captureVolume)
+		a.postDeviceToApi(uint8(contract.MessageTypeDefaultCaptureChanged), desc.Name, desc.PnpID, renderVolume, captureVolume)
 		a.logInfo("Capture device identified and updated: name=%q pnpId=%q renderVol=%d captureVol=%d", desc.Name, desc.PnpID, desc.RenderVolume, desc.CaptureVolume)
 	} else {
 		a.logError("Capture device can not be identified: %v", err)
 	}
 }
 
-func (a *scannerAppImpl) postDeviceToApi(event uint8, flowType, name, pnpID string, renderVolume, captureVolume int) {
+func (a *scannerAppImpl) postDeviceToApi(event uint8, name, pnpID string, renderVolume, captureVolume int) {
 	fields := map[string]string{
 		contract.FieldUpdateDate:    time.Now().UTC().Format(time.RFC3339),
-		contract.FieldFlowType:      flowType,
 		contract.FieldName:          name,
 		contract.FieldPnpID:         pnpID,
 		contract.FieldRenderVolume:  strconv.Itoa(renderVolume),
