@@ -90,9 +90,9 @@ func (e *RabbitMqEnqueuer) EnqueueRequest(request enqueuer.Request) error {
 		payload[key] = normalizeValue(key, value)
 	}
 
-	messageType, flowType := calculateFlowAndMessageType(request.Event)
-
+	flowType, messageType := calculateFlowAndMessageType(request.Event)
 	payload[contract.FieldDeviceMessageType] = messageType
+
 	httpRequest, urlSuffix := e.resolveHttpRequest(request, payload)
 	payload[contract.FieldHTTPRequest] = httpRequest
 	payload[contract.FieldURLSuffix] = urlSuffix
