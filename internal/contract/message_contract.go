@@ -1,17 +1,27 @@
 package contract
 
+type EventType uint8
+
+const (
+	EventTypeNothing EventType = iota
+	EventTypeRenderDeviceConfirmed
+	EventTypeCaptureDeviceConfirmed
+	EventTypeRenderDeviceDiscovered
+	EventTypeCaptureDeviceDiscovered
+	EventTypeRenderVolumeChanged
+	EventTypeCaptureVolumeChanged
+)
+
 type MessageType uint8
 
 const (
+	MessageTypeConfirmed  = 0
+	MessageTypeDiscovered = 1
+	//	MessageTypeDetached                          = 2
 	MessageTypeVolumeRenderChanged   MessageType = 3
 	MessageTypeVolumeCaptureChanged  MessageType = 4
 	MessageTypeDefaultRenderChanged  MessageType = 5
 	MessageTypeDefaultCaptureChanged MessageType = 6
-)
-
-const (
-	RequestPostDevice      = "post_device"
-	RequestPutVolumeChange = "put_volume_change"
 )
 
 type FlowType uint8
