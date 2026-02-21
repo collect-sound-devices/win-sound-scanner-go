@@ -21,7 +21,7 @@ It can run as a console application or as a Windows Service.
 ## Usage
 
 ### Steps to run
-1. Download and unzip the latest rollout of WinSoundScanner-x.x.x[-rc.xx]. from the latest repository release's assets, [Release](https://github.com/collect-sound-devices/win-sound-dev-go-bridge/releases/latest)
+1. Download and unzip the latest rollout of WinSoundScanner-x.x.x[-rc.xx]. from the latest repository release's assets, [Release](https://github.com/collect-sound-devices/win-sound-scanner-go/releases/latest)
 2. Register the service (run in elevated PowerShell):
   `.\bin\win-sound-scanner.exe install` (or unregister: `.\bin\win-sound-scanner.exe uninstall`)
 3. Start the service (run in elevated PowerShell):
@@ -30,8 +30,8 @@ It can run as a console application or as a Windows Service.
 
 Note: The win-sound-scanner.exe can be started as a Windows CLI, too, with logging to the console window. Stop it via Ctrl-C
 
-### Configuration
-#### RabbitMQ Mode
+## Configuration
+### RabbitMQ Mode
 By default, scanner uses the RabbitMQ-enqueuer to publish device information. This requires a running RabbitMQ instance.
 To disable request publishing to RabbitMQ, set the environment variable `WIN_SOUND_ENQUEUER` to `empty`:
   ```powershell
@@ -41,7 +41,7 @@ In order to use RabbitMQ again, set it back to empty string `rabbitmq`:
   ```powershell
   $Env:WIN_SOUND_ENQUEUER = "rabbitmq"
   ```
-#### Optional RabbitMQ mode overrides with default values:
+### Optional RabbitMQ mode overrides with default values:
 ```powershell
 $Env:WIN_SOUND_RABBITMQ_HOST = "localhost"
 $Env:WIN_SOUND_RABBITMQ_PORT = "5672"
@@ -52,7 +52,7 @@ $Env:WIN_SOUND_RABBITMQ_EXCHANGE = "sdr_exchange"
 $Env:WIN_SOUND_RABBITMQ_QUEUE = "sdr_queue"
 $Env:WIN_SOUND_RABBITMQ_ROUTING_KEY = "sdr_bind"
 ```
-#### Service configuration with environment variables
+### Service configuration with environment variables
 To store RabbitMQ settings as service environment variables, set them before `install`:
 ```powershell
 $Env:WIN_SOUND_ENQUEUER = "rabbitmq"
@@ -70,7 +70,7 @@ If you change service env vars later, run `stop`, `uninstall`, `install`, `start
 Enable CGO  and a GCC-style toolchain (MinGW-w64 gcc or LLVM-mingw clang).
 - Download an x86_64 LLVM‑mingw build (zip) from the official releases (search for “llvm-mingw releases”).
 - Your download's name is similar to llvm-mingw-20251118-msvcrt-x86_64.zip
-- Copy its bin, include,lib and x86_64-w64-mingw32 folders to some folder, e.g. E:\tools\llvm-mingw
+- Copy its bin, include,lib and x86_64-w64-mingw32 folders to some folder, e.g., E:\tools\llvm-mingw
 
 ### Build Steps
 
@@ -95,7 +95,7 @@ Compile with -gcflags=all="-N -l" to disable optimizations and inlining, then ru
   go build -gcflags "all=-N -l" -o (Join-Path $PWD.Path 'bin/win-sound-scanner.exe') ./cmd/win-sound-scanner
   dlv --listen=:2345 --headless=true --api-version=2 --accept-multiclient exec ./bin/win-sound-scanner.exe
   ```
-Then use remote debugging in your IDE (e.g. GoLand) to connect to localhost:2345
+Then use remote debugging in your IDE (e.g., GoLand) to connect to localhost:2345
 
 
 ## License
