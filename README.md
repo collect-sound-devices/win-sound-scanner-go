@@ -3,7 +3,9 @@
 WinSoundScanner detects audio endpoint devices under Windows and enqueues this information to a message queue for a target backend server.
 
 ## Architecture
-![architecture diagram](./docs/module-interaction01.png)
+<a href="./docs/module-interaction01.png">
+  <img src="./docs/module-interaction01.png" alt="architecture diagram" width="180" />
+</a>
 
 ## Functions
 - The WinSoundScanner collects audio device information on startup and subscribes to its changes with help of a C++/Go module, see [sound-win-scanner](https://github.com/collect-sound-devices/sound-win-scanner).
