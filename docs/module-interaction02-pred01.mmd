@@ -1,0 +1,26 @@
+flowchart BT
+
+  WIN["Core Audio<br>(Windows API)"]
+
+  subgraph BCK["SoundWinAgent C++ backend"]
+    LIB["SoundAgentLib,<br>SoundDeviceCollection<br>(C++ class)"]
+    APICLI["AudioDeviceApiClient<br>(C++ module)"]
+  APP["<b>SoundWinAgent<br>Windows Service<br>(C++ Module)</b>"]
+    RMQDISP["RabbitMqHttpRequestDispatcher<br>(C++ transport)"]
+  end
+
+  CHAN(["RMQ Channel"])
+  FWD["RabbitMQ-To-REST-API-Forwarder<br>(.NET Service)"]
+  API["Audio Device Repository Server<br>(REST API)"]
+
+  APP --> |ACCESS device| LIB
+  WIN ==> |Device and volume change<br>NOTIFICATIONS| LIB
+  LIB --> |ACCESS device characteristics| WIN
+  LIB ==> |Device <b>EVENTS</b>| APP
+
+  APP --> |BUILD message requests| APICLI
+  APICLI --> |ENQUEUE requests| RMQDISP
+  RMQDISP ==> |PUBLISH Message Requests| CHAN
+
+  CHAN ==> |READ Message Requests| FWD
+  FWD ==> |FORWARD Message Requests| API

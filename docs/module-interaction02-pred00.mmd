@@ -1,0 +1,23 @@
+flowchart BT
+
+  WIN["Core Audio<br>(Windows API)"]
+
+  subgraph BCK["SoundWinAgent C++ backend"]
+    LIB["SoundAgentLib,<br>SoundDeviceCollection<br>(C++ class)"]
+    APICLI["AudioDeviceApiClient<br>(C++ module)"]
+    HTTPPROC["HttpRequestProcessor<br>(C++ worker)"]
+
+  APP["<b>SoundWinAgent<br>Windows Service<br>(C++ Module)</b>"]
+      CQUEUE[("Internal C++ request queue")]
+  end
+API["Audio Device Repository Server<br>(REST API)"]
+
+  APP --> |ACCESS device| LIB
+  WIN ==> |Device and volume change<br>NOTIFICATIONS| LIB
+  LIB --> |ACCESS device characteristics| WIN
+  LIB ==> |Device <b>EVENTS</b>| APP
+
+  APP --> |BUILD message requests| APICLI
+  APICLI --> |ENQUEUE requests| HTTPPROC
+  HTTPPROC --> |PUSH request| CQUEUE
+  CQUEUE ==> |POST/PUT requests| API
