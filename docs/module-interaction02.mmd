@@ -10,6 +10,8 @@ flowchart BT
 
   APP["<b>WinSoundScanner<br>Windows Service<br>(Go Module)</b>"]
   CHAN(["RMQ Channel"])
+  FWD["RabbitMQ-To-REST-API-Forwarder<br>(.NET Service)"]
+  API["Audio Device Repository Server<br>(REST API)"]
 
   APP --> |ACCESS device| WRAP
   WRAP ==> |Device <b>EVENTS</b>| APP 
@@ -23,4 +25,5 @@ flowchart BT
   WIN ==> |Device and volume change<br>NOTIFICATIONS| LIB
   LIB --> |ACCESS device charachteristics| WIN
   APP ==> |EQUEUE Requests| CHAN
-
+  CHAN ==> |READ Message Requests| FWD
+  FWD ==> |FORWARD Message Requests| API
