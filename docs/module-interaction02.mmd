@@ -1,0 +1,26 @@
+flowchart BT
+
+  WIN["Core Audio<br>(Windows API)"]
+
+  subgraph BCK["sound-win-scanner backend"]
+	WRAP["soundlibwrap<br>(Go/CGO Module)"]
+	DLL["SoundAgentApi.dll<br>(ANSI C API)"]
+	LIB["SoundAgentLib,<br>SoundDeviceCollection<br>(C++ class)"]
+  end
+
+  APP["<b>WinSoundScanner<br>Windows Service<br>(Go Module)</b>"]
+  CHAN(["RMQ Channel"])
+
+  APP --> |ACCESS device| WRAP
+  WRAP ==> |Device <b>EVENTS</b>| APP 
+
+  WRAP --> |ACCESS C API| DLL
+  DLL --> |ACCESS C++ API| LIB
+
+  LIB ==>|SaaEvent <b>CALLBACKS</b>| DLL
+  DLL ==>|CGO <b>CALLBACKS</b>| WRAP
+
+  WIN ==> |Device and volume change<br>NOTIFICATIONS| LIB
+  LIB --> |ACCESS device charachteristics| WIN
+  APP ==> |EQUEUE Requests| CHAN
+
