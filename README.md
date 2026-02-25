@@ -7,37 +7,48 @@ WinSoundScanner detects audio endpoint devices under Windows and enqueues this i
 ```mermaid
 flowchart BT
 
-WIN["Core Audio<br>(Windows API)"]
+classDef dottedBox fill:transparent,fill-opacity:0.55, stroke-dasharray:20 5,stroke-width:2px;
+classDef stressedBox fill:#f0f0f0,fill-opacity:0.4,stroke-width:5px;
 
-subgraph BCK["sound-win-scanner backend"]
-WRAP["soundlibwrap<br>(Go/CGO module)"]
-DLL["SoundAgentApi.dll<br>(ANSI C API)"]
-LIB["SoundAgentLib::<br>SoundDeviceCollection<br>(C++ class)"]
+coreAudioApi["Core Audio<br>(Windows API)"]
+
+subgraph scannerBackend["Sound Scanner backend"]
+    goCgoWrapper["SoundLibWrap<br>(Go/CGO module)"]
+    soundAgentApiDll["SoundAgentApi.dll<br>(ANSI C API)"]
+    soundDeviceCollection["SoundAgentLib::<br>SoundDeviceCollection<br>(C++ class)"]
 end
+class scannerBackend dottedBox
 
-WIN ==> |Device and volume change<br>NOTIFICATIONS| LIB
-LIB --> |ACCESS device characteristics| WIN
+coreAudioApi -->|Device and volume change<br>notifications| soundDeviceCollection
+soundDeviceCollection --> |Read device characteristics| coreAudioApi
 
-APP["<b>WinSoundScanner<br>(Go Windows Service)</b>"]
-CHAN[("request queue<br>as RMQ channel")]
-FWD["RabbitMQ-To-REST-API-Forwarder<br>(.NET microservice)"]
-API["Device Repository Server<br>(REST API)"]
+subgraph scannerService["<b>win-sound-scanner-go</b>"]
+    winSoundScannerService["<b>WinSoundScanner<br>(Go Windows Service)</b>"]
+end
+class scannerService stressedBox
 
-APP --> |ACCESS device| WRAP
-WRAP ==> |Device EVENTS| APP
+subgraph requestQueueMicroservice["Request queue microservice"]
+    requestQueue[("Request Queue<br>(RabbitMQ channel)")]
+    rabbitMqRestForwarder["RabbitMQ-to-REST Forwarder<br>(.NET microservice)"]
+end
+class requestQueueMicroservice dottedBox
 
-WRAP --> |ACCESS C API| DLL
-DLL --> |ACCESS C++ API| LIB
+deviceRepositoryApi["Device Repository Server<br>(REST API)"]
 
-LIB ==>|SaaEvent CALLBACKS| DLL
-DLL ==>|CGO CALLBACKS| WRAP
+winSoundScannerService --> |Access device| goCgoWrapper
+goCgoWrapper -->|Device events| winSoundScannerService
 
-APP ==> |EQUEUE message requests| CHAN
+goCgoWrapper --> |Call C API| soundAgentApiDll
+soundAgentApiDll --> |Call C++ API| soundDeviceCollection
 
-CHAN ==> |FETCH message requests| FWD
-FWD --> |DETECT message requests| CHAN
+soundDeviceCollection -->|SaaEvent callbacks| soundAgentApiDll
+soundAgentApiDll -->|CGO callbacks| goCgoWrapper
 
-FWD ==> |FORWARD message requests| API
+winSoundScannerService -->|Enqueue request messages| requestQueue
+
+requestQueue -->|Fetch request messages| rabbitMqRestForwarder
+rabbitMqRestForwarder --> |Detect request messages| requestQueue
+rabbitMqRestForwarder -->|Forward request messages| deviceRepositoryApi
 ```
 
 ## Functions
