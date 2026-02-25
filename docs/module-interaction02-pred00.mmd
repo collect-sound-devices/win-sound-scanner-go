@@ -1,0 +1,27 @@
+flowchart BT
+
+classDef stressedBox fill:#f0f0f0,fill-opacity:0.4,stroke-width:5px;
+
+coreAudioApi["Core Audio<br>(Windows API)"]
+
+subgraph soundWinAgentModule["SoundWinAgent Monolith"]
+    soundDeviceCollection["SoundAgentLib::<br>SoundDeviceCollection<br>(C++ class)"]
+    httpRequestDispatcher["HttpRequestDispatcher<br>(C++ class)"]
+
+    soundWinAgentService["<b>SoundWinAgent<br>(C++ Windows Service)</b>"]
+    internalCppRequestQueue["Internal C++ request queue"]
+
+    soundWinAgentService --> |Enqueue request messages| httpRequestDispatcher
+end
+class soundWinAgentModule stressedBox
+
+coreAudioApi --> |Device and volume change<br>notifications| soundDeviceCollection
+soundDeviceCollection --> |Read device characteristics| coreAudioApi
+
+deviceRepositoryApi["Device Repository Server<br>(REST API)"]
+
+soundWinAgentService --> |Access device| soundDeviceCollection
+soundDeviceCollection --> |Device events| soundWinAgentService
+
+httpRequestDispatcher --> |Push request| internalCppRequestQueue
+internalCppRequestQueue --> |POST/PUT requests| deviceRepositoryApi

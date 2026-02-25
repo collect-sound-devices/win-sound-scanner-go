@@ -3,9 +3,53 @@
 WinSoundScanner detects audio endpoint devices under Windows and enqueues this information to a message queue for a target backend server.
 
 ## Architecture
-<a href="./docs/module-interaction01.png">
-  <img src="./docs/module-interaction01.png" alt="architecture diagram" width="180" />
-</a>
+
+```mermaid
+flowchart BT
+
+classDef dottedBox fill:transparent,fill-opacity:0.55, stroke-dasharray:20 5,stroke-width:2px;
+classDef stressedBox fill:#f0f0f0,fill-opacity:0.4,stroke-width:5px;
+
+coreAudioApi["Core Audio<br>(Windows API)"]
+
+subgraph scannerBackend["Sound Scanner backend"]
+    goCgoWrapper["SoundLibWrap<br>(Go/CGO module)"]
+    soundAgentApiDll["SoundAgentApi.dll<br>(ANSI C API)"]
+    soundDeviceCollection["SoundAgentLib::<br>SoundDeviceCollection<br>(C++ class)"]
+end
+class scannerBackend dottedBox
+
+coreAudioApi -->|Device and volume change<br>notifications| soundDeviceCollection
+soundDeviceCollection --> |Read device characteristics| coreAudioApi
+
+subgraph scannerService["<b>win-sound-scanner-go</b>"]
+    winSoundScannerService["<b>WinSoundScanner<br>(Go Windows Service)</b>"]
+end
+class scannerService stressedBox
+
+subgraph requestQueueMicroservice["Request queue microservice"]
+    requestQueue[("Request Queue<br>(RabbitMQ channel)")]
+    rabbitMqRestForwarder["RabbitMQ-to-REST Forwarder<br>(.NET microservice)"]
+end
+class requestQueueMicroservice dottedBox
+
+deviceRepositoryApi["Device Repository Server<br>(REST API)"]
+
+winSoundScannerService --> |Access device| goCgoWrapper
+goCgoWrapper -->|Device events| winSoundScannerService
+
+goCgoWrapper --> |Call C API| soundAgentApiDll
+soundAgentApiDll --> |Call C++ API| soundDeviceCollection
+
+soundDeviceCollection -->|SaaEvent callbacks| soundAgentApiDll
+soundAgentApiDll -->|CGO callbacks| goCgoWrapper
+
+winSoundScannerService -->|Enqueue request messages| requestQueue
+
+requestQueue -->|Fetch request messages| rabbitMqRestForwarder
+rabbitMqRestForwarder --> |Detect request messages| requestQueue
+rabbitMqRestForwarder -->|Forward request messages| deviceRepositoryApi
+```
 
 ## Functions
 - The WinSoundScanner collects audio device information on startup and subscribes to its changes with help of a C++/Go module, see [sound-win-scanner](https://github.com/collect-sound-devices/sound-win-scanner).
@@ -104,6 +148,11 @@ Compile with -gcflags=all="-N -l" to disable optimizations and inlining, then ru
   ```
 Then use remote debugging in your IDE (e.g., GoLand) to connect to localhost:2345
 
+## Changelog
+- 2026-02-25 Replaced the static architecture image with Mermaid diagrams and refined module interaction diagrams for the scanner.
+- 2026-02-19 Added Windows Service support (`install`, `uninstall`, `start`, `stop`), file logging to `%ProgramData%\WinSoundScanner\service.log`, and split console/service startup paths.
+- 2026-02-13 Implemented RabbitMQ request enqueuer as default transport, expanded `WIN_SOUND_*` configuration options.
+- 2026-02-01 Introduced scanner/logger apps with Windows audio device and volume notification handlers.
 
 ## License
 
