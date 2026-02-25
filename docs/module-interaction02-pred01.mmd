@@ -1,30 +1,29 @@
 flowchart BT
 
-WIN["Core Audio<br>(Windows API)"]
+coreAudioApi["Core Audio<br>(Windows API)"]
 
-subgraph BCK["SoundWinAgent C++ module"]
-	LIB["SoundAgentLib::<br>SoundDeviceCollection<br>(C++ class)"]
-	APP["<b>SoundWinAgent<br>(C++ Windows Service)</b>"]
-	RMQDISP["RabbitMqHttpRequestDispatcher<br>(C++ class)"]
+subgraph soundWinAgentModule["SoundWinAgent C++ Module"]
+    soundDeviceCollection["SoundAgentLib::<br>SoundDeviceCollection<br>(C++ class)"]
+    soundWinAgentService["<b>SoundWinAgent<br>(C++ Windows Service)</b>"]
+    rabbitMqHttpRequestDispatcher["RabbitMqHttpRequestDispatcher<br>(C++ class)"]
 
-	APP --> |ACCESS device| LIB
-	LIB ==> |Device <b>EVENTS</b>| APP
+    soundWinAgentService --> |Access device| soundDeviceCollection
+    soundDeviceCollection ==> |Device events| soundWinAgentService
 
-	APP --> |ENQUEUE message requests| RMQDISP
+    soundWinAgentService --> |Enqueue request messages| rabbitMqHttpRequestDispatcher
 end
-style BCK fill:#f6f8fa,stroke:#57606a,color:#24292f
 
-WIN ==> |Device and volume change<br>NOTIFICATIONS| LIB
-LIB --> |ACCESS device characteristics| WIN
+coreAudioApi ==> |Device and volume change<br>notifications| soundDeviceCollection
+soundDeviceCollection --> |Read device characteristics| coreAudioApi
 
-CHAN[("request queue<br>as RMQ channel")]
-FWD["RabbitMQ-To-REST-API-Forwarder<br>(.NET microservice)"]
-API["Device Repository Server<br>(REST API)"]
+requestQueue[("Request Queue<br>(RabbitMQ channel)")]
+rabbitMqRestForwarder["RabbitMQ-to-REST Forwarder<br>(.NET microservice)"]
+deviceRepositoryApi["Device Repository Server<br>(REST API)"]
 
-RMQDISP ==> |ENQUEUE message requests| CHAN
+rabbitMqHttpRequestDispatcher ==> |Enqueue request messages| requestQueue
 
 
-CHAN ==> |FETCH message requests| FWD
-FWD --> |DETECT message requests| CHAN
+requestQueue ==> |Fetch request messages| rabbitMqRestForwarder
+rabbitMqRestForwarder --> |Detect request messages| requestQueue
 
-FWD ==> |FORWARD message requests| API
+rabbitMqRestForwarder ==> |Forward request messages| deviceRepositoryApi

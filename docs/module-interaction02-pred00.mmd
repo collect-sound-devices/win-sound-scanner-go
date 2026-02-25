@@ -1,25 +1,24 @@
 flowchart BT
 
-WIN["Core Audio<br>(Windows API)"]
+coreAudioApi["Core Audio<br>(Windows API)"]
 
-subgraph BCK["SoundWinAgent C++ module"]
-	LIB["SoundAgentLib,<br>SoundDeviceCollection<br>(C++ class)"]
-	HTTPPROC["HttpRequestDispatcher<br>(C++ class)"]
+subgraph soundWinAgentModule["SoundWinAgent C++ Module"]
+    soundDeviceCollection["SoundAgentLib::<br>SoundDeviceCollection<br>(C++ class)"]
+    httpRequestDispatcher["HttpRequestDispatcher<br>(C++ class)"]
 
-	APP["<b>SoundWinAgent<br>(C++ Windows Service)</b>"]
-	CQUEUE["Internal C++ request queue"]
+    soundWinAgentService["<b>SoundWinAgent<br>(C++ Windows Service)</b>"]
+    internalCppRequestQueue["Internal C++ request queue"]
 
-	APP --> |ENQUEUE message requests| HTTPPROC
+    soundWinAgentService --> |Enqueue request messages| httpRequestDispatcher
 end
-style BCK fill:#f6f8fa,stroke:#57606a,color:#24292f
 
-WIN ==> |Device and volume change<br>NOTIFICATIONS| LIB
-LIB --> |ACCESS device characteristics| WIN
+coreAudioApi ==> |Device and volume change<br>notifications| soundDeviceCollection
+soundDeviceCollection --> |Read device characteristics| coreAudioApi
 
-API["Device Repository Server<br>(REST API)"]
+deviceRepositoryApi["Device Repository Server<br>(REST API)"]
 
-APP --> |ACCESS device| LIB
-LIB ==> |Device <b>EVENTS</b>| APP
+soundWinAgentService --> |Access device| soundDeviceCollection
+soundDeviceCollection ==> |Device events| soundWinAgentService
 
-HTTPPROC --> |PUSH request| CQUEUE
-CQUEUE ==> |POST/PUT requests| API
+httpRequestDispatcher --> |Push request| internalCppRequestQueue
+internalCppRequestQueue ==> |POST/PUT requests| deviceRepositoryApi
