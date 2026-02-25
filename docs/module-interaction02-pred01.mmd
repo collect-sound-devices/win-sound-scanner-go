@@ -1,29 +1,37 @@
 flowchart BT
 
+classDef dottedBox fill:transparent,fill-opacity:0.55, stroke-dasharray:20 5,stroke-width:2px;
+classDef stressedBox fill:#f0f0f0,fill-opacity:0.4,stroke-width:5px;
+
 coreAudioApi["Core Audio<br>(Windows API)"]
 
-subgraph soundWinAgentModule["SoundWinAgent C++ Module"]
+subgraph soundWinAgentModule["SoundWinAgent Monolith"]
     soundDeviceCollection["SoundAgentLib::<br>SoundDeviceCollection<br>(C++ class)"]
     soundWinAgentService["<b>SoundWinAgent<br>(C++ Windows Service)</b>"]
     rabbitMqHttpRequestDispatcher["RabbitMqHttpRequestDispatcher<br>(C++ class)"]
 
     soundWinAgentService --> |Access device| soundDeviceCollection
-    soundDeviceCollection ==> |Device events| soundWinAgentService
+    soundDeviceCollection --> |Device events| soundWinAgentService
 
     soundWinAgentService --> |Enqueue request messages| rabbitMqHttpRequestDispatcher
 end
+class soundWinAgentModule stressedBox
 
-coreAudioApi ==> |Device and volume change<br>notifications| soundDeviceCollection
+coreAudioApi --> |Device and volume change<br>notifications| soundDeviceCollection
 soundDeviceCollection --> |Read device characteristics| coreAudioApi
 
-requestQueue[("Request Queue<br>(RabbitMQ channel)")]
-rabbitMqRestForwarder["RabbitMQ-to-REST Forwarder<br>(.NET microservice)"]
+subgraph requestQueueMicroservice["Request queue microservice"]
+    requestQueue[("Request Queue<br>(RabbitMQ channel)")]
+    rabbitMqRestForwarder["RabbitMQ-to-REST Forwarder<br>(.NET microservice)"]
+end
+class requestQueueMicroservice dottedBox
+
 deviceRepositoryApi["Device Repository Server<br>(REST API)"]
 
-rabbitMqHttpRequestDispatcher ==> |Enqueue request messages| requestQueue
+rabbitMqHttpRequestDispatcher --> |Enqueue request messages| requestQueue
 
 
-requestQueue ==> |Fetch request messages| rabbitMqRestForwarder
+requestQueue --> |Fetch request messages| rabbitMqRestForwarder
 rabbitMqRestForwarder --> |Detect request messages| requestQueue
 
-rabbitMqRestForwarder ==> |Forward request messages| deviceRepositoryApi
+rabbitMqRestForwarder --> |Forward request messages| deviceRepositoryApi
