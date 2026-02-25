@@ -148,6 +148,11 @@ Compile with -gcflags=all="-N -l" to disable optimizations and inlining, then ru
   ```
 Then use remote debugging in your IDE (e.g., GoLand) to connect to localhost:2345
 
+## Changelog
+- 2026-02-25 Replaced the static architecture image with Mermaid diagrams and refined module interaction diagrams for the scanner.
+- 2026-02-19 Added Windows Service support (`install`, `uninstall`, `start`, `stop`), file logging to `%ProgramData%\WinSoundScanner\service.log`, and split console/service startup paths.
+- 2026-02-13 Implemented RabbitMQ request enqueuer as default transport, expanded `WIN_SOUND_*` configuration options.
+- 2026-02-01 Introduced scanner/logger apps with Windows audio device and volume notification handlers.
 
 ## License
 
