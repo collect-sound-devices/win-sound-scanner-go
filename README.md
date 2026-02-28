@@ -1,6 +1,6 @@
 # win-sound-scanner (Windows Sound Scanner, WinSoundScanner)
 
-WinSoundScanner detects audio endpoint devices under Windows and enqueues this information to a message queue for a target backend server.
+WinSoundScanner monitors audio devices and publishes their state changes to RabbitMQ for delivery to a REST API endpoint.
 
 ## Architecture
 
