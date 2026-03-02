@@ -31,7 +31,7 @@ soundAgentApiDll --> |Read device characteristics| coreAudioApi
 subgraph scannerService["<b>win-sound-scanner-go</b>"]
     invisible1["<br><br><br><br><br>"]
     class invisible1 invisibleNode
-    winSoundScannerService["WinSoundScanner<br>Go Windows Service"]
+    winSoundScannerService[["<b>WinSoundScanner</b><br>(Go Windows Service)"]]
     invisible2["<br><br><br><br><br>"]
     class invisible2 invisibleNode
 end
@@ -51,7 +51,7 @@ goCgoWrapper -->|Device events| winSoundScannerService
 goCgoWrapper --> |C API calls| soundAgentApiDll
 soundAgentApiDll -->|C / C++ callbacks| goCgoWrapper
 
-winSoundScannerService -->|Enqueue request messages| requestQueue
+winSoundScannerService -->|Publish request messages| requestQueue
 
 requestQueue -->|Fetch request messages| rabbitMqRestForwarder
 rabbitMqRestForwarder --> |Detect request messages| requestQueue
