@@ -37,7 +37,7 @@ subgraph scannerService["<b>win-sound-scanner-go</b>"]
 end
 class scannerService stressedBox
 
-subgraph requestQueueMicroservice["Request queue microservice"]
+subgraph requestQueueMicroservice["rmq-to-rest-api-forwarder"]
     requestQueue[("Request Queue<br>(RabbitMQ channel)")]
     rabbitMqRestForwarder["RabbitMQ-to-REST Forwarder<br>(.NET microservice)"]
 end
