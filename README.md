@@ -4,32 +4,42 @@ WinSoundScanner monitors audio devices and publishes their state changes to Rabb
 
 ## Architecture
 
+<div style="zoom: 0.5;">
+
 ```mermaid
 flowchart BT
 
-classDef dottedBox fill:transparent,fill-opacity:0.55, stroke-dasharray:20 5,stroke-width:2px;
-classDef stressedBox fill:#f0f0f0,fill-opacity:0.4,stroke-width:5px;
+classDef dottedBox fill:transparent, fill-opacity:0.55, stroke-dasharray:10 8, stroke-width:2px;
+classDef stressedBox fill:#f0f0f0, fill-opacity:0.2, stroke-dasharray:10 8, stroke-width:4px;
+classDef invisibleNode fill:transparent, stroke:transparent;
 
 coreAudioApi["Core Audio<br>(Windows API)"]
 
 subgraph scannerBackend["Sound Scanner backend"]
+    invisible3["<br><br><br><br><br>"]
+    class invisible3 invisibleNode
     goCgoWrapper["SoundLibWrap<br>(Go/CGO module)"]
-    soundAgentApiDll["SoundAgentApi.dll<br>(ANSI C API)"]
-    soundDeviceCollection["SoundAgentLib::<br>SoundDeviceCollection<br>(C++ class)"]
+    soundAgentApiDll["ANSI C SoundAgentApi.dll,<br>SoundDeviceCollection<br>(C++ class)"]
+    invisible4["<br><br><br><br><br>"]
+    class invisible4 invisibleNode
 end
 class scannerBackend dottedBox
 
-coreAudioApi -->|Device and volume change<br>notifications| soundDeviceCollection
-soundDeviceCollection --> |Read device characteristics| coreAudioApi
+coreAudioApi -->|Device and volume change<br>notifications| soundAgentApiDll
+soundAgentApiDll --> |Read device characteristics| coreAudioApi
 
 subgraph scannerService["<b>win-sound-scanner-go</b>"]
-    winSoundScannerService["<b>WinSoundScanner<br>(Go Windows Service)</b>"]
+    invisible1["<br><br><br><br><br>"]
+    class invisible1 invisibleNode
+    winSoundScannerService[["<b>WinSoundScanner</b><br>(Go Windows Service)"]]
+    invisible2["<br><br><br><br><br>"]
+    class invisible2 invisibleNode
 end
 class scannerService stressedBox
 
-subgraph requestQueueMicroservice["Request queue microservice"]
+subgraph requestQueueMicroservice["<br>"]
     requestQueue[("Request Queue<br>(RabbitMQ channel)")]
-    rabbitMqRestForwarder["RabbitMQ-to-REST Forwarder<br>(.NET microservice)"]
+    rabbitMqRestForwarder["RmqToRestApiForwarder<br>(.NET microservice)"]
 end
 class requestQueueMicroservice dottedBox
 
@@ -38,18 +48,16 @@ deviceRepositoryApi["Device Repository Server<br>(REST API)"]
 winSoundScannerService --> |Access device| goCgoWrapper
 goCgoWrapper -->|Device events| winSoundScannerService
 
-goCgoWrapper --> |Call C API| soundAgentApiDll
-soundAgentApiDll --> |Call C++ API| soundDeviceCollection
+goCgoWrapper --> |C API calls| soundAgentApiDll
+soundAgentApiDll -->|C / C++ callbacks| goCgoWrapper
 
-soundDeviceCollection -->|SaaEvent callbacks| soundAgentApiDll
-soundAgentApiDll -->|CGO callbacks| goCgoWrapper
-
-winSoundScannerService -->|Enqueue request messages| requestQueue
+winSoundScannerService -->|Publish request messages| requestQueue
 
 requestQueue -->|Fetch request messages| rabbitMqRestForwarder
 rabbitMqRestForwarder --> |Detect request messages| requestQueue
-rabbitMqRestForwarder -->|Forward request messages| deviceRepositoryApi
+rabbitMqRestForwarder -->|POST/PUT requests| deviceRepositoryApi
 ```
+</div>
 
 ## Functions
 - The WinSoundScanner collects audio device information on startup and subscribes to its changes with help of a C++/Go module, see [sound-win-scanner](https://github.com/collect-sound-devices/sound-win-scanner).
