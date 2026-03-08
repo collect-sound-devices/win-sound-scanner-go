@@ -22,7 +22,7 @@ soundDeviceCollection --> |Read device characteristics| coreAudioApi
 
 subgraph requestQueueMicroservice["<br>"]
     requestQueue[("Request Queue<br>(RabbitMQ channel)")]
-    rabbitMqRestForwarder["RabbitMQ-to-REST Forwarder<br>(.NET microservice)"]
+    rabbitMqRestForwarder["RmqToRestApiForwarder<br>(.NET microservice)"]
 end
 class requestQueueMicroservice dottedBox
 
