@@ -30,7 +30,7 @@ class scannerService stressedBox
 
 subgraph requestQueueMicroservice["<br>"]
     requestQueue[("Request Queue<br>(RabbitMQ channel)")]
-    rabbitMqRestForwarder[""RmqToRestApiForwarder<br>(.NET microservice)""]
+    rabbitMqRestForwarder["mqToRestApiForwarder<br>(.NET microservice)"]
 end
 class requestQueueMicroservice dottedBox
 
