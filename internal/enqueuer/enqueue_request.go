@@ -1,8 +1,9 @@
 package enqueuer
 
 import (
-	"github.com/collect-sound-devices/win-sound-dev-go-bridge/internal/contract"
 	"time"
+
+	"github.com/collect-sound-devices/win-sound-go-bridge/internal/contract"
 )
 
 type Request struct {

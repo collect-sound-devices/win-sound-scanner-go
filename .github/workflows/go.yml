@@ -65,6 +65,8 @@ jobs:
       contents: read
       packages: write
     env:
+      APP_NAME: win-sound-scanner
+      APP_MODULE_PATH: github.com/collect-sound-devices/win-sound-go-bridge
       IMAGE_NAME: ghcr.io/${{ github.repository }}
       VERSION: ${{ needs.setup-and-compute-version.outputs.version }}
 
@@ -124,14 +126,39 @@ jobs:
           "CXX=$cxx" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
           "APP_VERSION=$version" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
 
+      - name: Generate Windows VersionInfo resource
+        shell: powershell
+        run: |
+          $versionText = $Env:APP_VERSION.TrimStart("v")
+          $versionParts = @(0, 0, 0, 0)
+          if ($versionText -match '^(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:.*?(\d+))?$') {
+            for ($i = 1; $i -le 4; $i++) {
+              if ($Matches[$i]) {
+                $versionParts[$i - 1] = [int]$Matches[$i]
+              }
+            }
+          }
+
+          $rcTemplatePath = Join-Path $PWD "cmd/win-sound-scanner/versioninfo.rc"
+          $rcBuildPath = Join-Path $Env:TEMP "win-sound-scanner-versioninfo.rc"
+          $sysoPath = Join-Path $PWD "cmd/win-sound-scanner/versioninfo_windows.syso"
+          $windresPath = "C:\tools\llvm-mingw\bin\x86_64-w64-mingw32-windres.exe"
+          $rcContent = Get-Content -LiteralPath $rcTemplatePath -Raw
+          $rcContent = $rcContent.Replace("__APP_NAME__", $Env:APP_NAME)
+          $rcContent = $rcContent.Replace("__APP_VERSION__", $versionText)
+          $rcContent = $rcContent.Replace("__FILE_VERSION__", ($versionParts -join ","))
+          [System.IO.File]::WriteAllText($rcBuildPath, $rcContent, [System.Text.Encoding]::ASCII)
+          & $windresPath --input $rcBuildPath --output $sysoPath --output-format coff
+          if ($LASTEXITCODE -ne 0) {
+            throw "windres failed with exit code $LASTEXITCODE."
+          }
+
       - name: Build Go binary (CGO, Windows) first time, compiler errors ignored
         shell: powershell
-        env:
-          APP_VERSION: ${{ env.APP_VERSION }}
         run: |
           New-Item -ItemType Directory -Force -Path (Join-Path $PWD "bin") | Out-Null
 
-          $ldflags = "-X github.com/collect-sound-devices/win-sound-scanner-go/pkg/appinfo.Version=$Env:APP_VERSION"
+          $ldflags = "-X $Env:APP_MODULE_PATH/pkg/appinfo.AppName=$Env:APP_NAME -X $Env:APP_MODULE_PATH/pkg/appinfo.Version=$Env:APP_VERSION"
           Write-Host "[non-fatal] Running initial go build with CGO..."
           go build -ldflags $ldflags -o (Join-Path $PWD.Path 'bin/win-sound-scanner.exe') ./cmd/win-sound-scanner
           if ($LASTEXITCODE -ne 0) {
@@ -143,7 +170,6 @@ jobs:
       - name: Run fetch-native script
         shell: powershell
         env:
-          APP_VERSION: ${{ env.APP_VERSION }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
           GITHUB_SHA: ${{ github.sha }}
@@ -154,16 +180,12 @@ jobs:
 
       - name: Rebuild Go binary after native fetch
         shell: powershell
-        env:
-          APP_VERSION: ${{ env.APP_VERSION }}
         run: |
-          $ldflags = "-X github.com/collect-sound-devices/win-sound-scanner-go/pkg/appinfo.Version=$Env:APP_VERSION"
+          $ldflags = "-X $Env:APP_MODULE_PATH/pkg/appinfo.AppName=$Env:APP_NAME -X $Env:APP_MODULE_PATH/pkg/appinfo.Version=$Env:APP_VERSION"
           go build -ldflags $ldflags -o (Join-Path $PWD.Path 'bin/win-sound-scanner.exe') ./cmd/win-sound-scanner
 
       - name: Package bin directory
         shell: powershell
-        env:
-          APP_VERSION: ${{ env.APP_VERSION }}
         run: |
           $artifactName = "WinSoundScanner-$Env:APP_VERSION.zip"
           Write-Host "Creating artifact $artifactName from bin/ ..."
@@ -176,11 +198,9 @@ jobs:
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
-        env:
-          APP_VERSION: ${{ env.APP_VERSION }}
         with:
           name: Artifacts
-          path: WinSoundScanner-${{ env.APP_VERSION }}.zip
+          path: WinSoundScanner-*.zip
           if-no-files-found: error
 
   publish:

@@ -1,4 +1,4 @@
-module github.com/collect-sound-devices/win-sound-dev-go-bridge
+module github.com/collect-sound-devices/win-sound-go-bridge
 
 go 1.23.0
 

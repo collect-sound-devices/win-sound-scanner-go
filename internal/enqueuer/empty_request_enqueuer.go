@@ -1,7 +1,7 @@
 package enqueuer
 
 import (
-	"github.com/collect-sound-devices/win-sound-dev-go-bridge/internal/logging"
+	"github.com/collect-sound-devices/win-sound-go-bridge/internal/logging"
 )
 
 type EmptyRequestEnqueuer struct {

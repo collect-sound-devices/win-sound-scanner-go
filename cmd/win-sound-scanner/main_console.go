@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/collect-sound-devices/win-sound-dev-go-bridge/internal/scannerapp"
+	"github.com/collect-sound-devices/win-sound-go-bridge/internal/scannerapp"
 )
 
 var (

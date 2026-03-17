@@ -8,7 +8,13 @@ Path to llvm-mingw root; set to empty to skip overriding CC/CXX.
 Param(
     [Alias("m")]
     [Parameter(HelpMessage = "Path to llvm-mingw root; set to empty to skip overriding CC/CXX.")]
-    [string]$mingwPath = "E:\\tools\\llvm-mingw\\"
+    [string]$mingwPath = "E:\\tools\\llvm-mingw\\",
+
+    [Parameter(HelpMessage = "Application name used for ldflags and VersionInfo.")]
+    [string]$appName = "win-sound-scanner",
+
+    [Parameter(HelpMessage = "Application version used for ldflags and VersionInfo.")]
+    [string]$appVersion = "dev"
 )
 
 # go to the repo root
@@ -28,9 +34,16 @@ if ($mingwPath -ne "") {
     $Env:CXX = Join-Path $mingwPath "bin/x86_64-w64-mingw32-clang++.exe"
 }
 
-go build -v -o (Join-Path $PWD.Path 'bin/win-sound-scanner.exe') ./cmd/win-sound-scanner
+$modulePath = "github.com/collect-sound-devices/win-sound-go-bridge"
+
+$versionText = $appVersion.TrimStart("v")
+.\scripts\internal\version-info.ps1 -appName $appName -appVersion $versionText -mingwPath $mingwPath
+
+$ldflags = "-X $modulePath/pkg/appinfo.AppName=$appName -X $modulePath/pkg/appinfo.Version=$versionText"
+
+go build -v -ldflags $ldflags -o (Join-Path $PWD.Path 'bin/win-sound-scanner.exe') ./cmd/win-sound-scanner
 
 .\scripts\internal\fetch-native.ps1
 
 ## once more
-go build -v -o (Join-Path $PWD.Path 'bin/win-sound-scanner.exe') ./cmd/win-sound-scanner
+go build -v -ldflags $ldflags -o (Join-Path $PWD.Path 'bin/win-sound-scanner.exe') ./cmd/win-sound-scanner
