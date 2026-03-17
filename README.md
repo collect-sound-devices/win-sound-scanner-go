@@ -134,6 +134,7 @@ Enable CGO  and a GCC-style toolchain (MinGW-w64 gcc or LLVM-mingw clang).
 ### Build Steps
 
 - Run `.\scripts\build.ps1 -m "E:\tools\llvm-mingw"` with your path to the mingw toolchain
+- To sign the exe during that build, set `WIN_SOUND_SIGN_PFX_PATH` and `WIN_SOUND_SIGN_PFX_PASSWORD` before running the script
 - Alternatively, set the environment variables for CGO and the compiler manually, then run the build commands below:
   ```powershell
   $Env:CGO_ENABLED = "1"
@@ -157,6 +158,7 @@ Compile with -gcflags=all="-N -l" to disable optimizations and inlining, then ru
 Then use remote debugging in your IDE (e.g., GoLand) to connect to localhost:2345
 
 ## Changelog
+- 2026-03-18 Exe got a correct version info and signature.
 - 2026-03-11 Added support for extended operating system version information (OS_VERSION_INFO). 
 - 2026-02-25 Replaced the static architecture image with Mermaid diagrams and refined module interaction diagrams for the scanner.
 - 2026-02-19 Added Windows Service support (`install`, `uninstall`, `start`, `stop`), file logging to `%ProgramData%\WinSoundScanner\service.log`, and split console/service startup paths.

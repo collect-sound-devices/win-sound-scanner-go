@@ -66,8 +66,6 @@ jobs:
       packages: write
     env:
       APP_NAME: win-sound-scanner
-      APP_MODULE_PATH: github.com/collect-sound-devices/win-sound-go-bridge
-      IMAGE_NAME: ghcr.io/${{ github.repository }}
       VERSION: ${{ needs.setup-and-compute-version.outputs.version }}
 
     steps:
@@ -107,7 +105,7 @@ jobs:
           Remove-Item $zip -Force
           Write-Host "llvm-mingw installed under $dest"
 
-      - name: Setting environment variables for the rest of the steps
+      - name: Set build version
         shell: powershell
         run: |
           $version = "${{ env.VERSION }}"
@@ -117,72 +115,22 @@ jobs:
           if ($version.StartsWith("v")) {
             $version = $version.Substring(1)
           }
-          $cgo_enabled = "1"
-          $cc  = "C:\tools\llvm-mingw\bin\x86_64-w64-mingw32-clang.exe"
-          $cxx = "C:\tools\llvm-mingw\bin\x86_64-w64-mingw32-clang++.exe"
           Write-Host "Computed APP_VERSION=$version"
-          "CGO_ENABLED=$cgo_enabled" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
-          "CC=$cc" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
-          "CXX=$cxx" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
           "APP_VERSION=$version" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
 
-      - name: Generate Windows VersionInfo resource
+      - name: Restore signing certificate
+        if: ${{ secrets.WIN_SOUND_SIGN_PFX_BASE64 != '' && secrets.WIN_SOUND_SIGN_PFX_PASSWORD != '' }}
         shell: powershell
         run: |
-          $versionText = $Env:APP_VERSION.TrimStart("v")
-          $versionParts = @(0, 0, 0, 0)
-          if ($versionText -match '^(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:.*?(\d+))?$') {
-            for ($i = 1; $i -le 4; $i++) {
-              if ($Matches[$i]) {
-                $versionParts[$i - 1] = [int]$Matches[$i]
-              }
-            }
-          }
+          $certPath = Join-Path $Env:RUNNER_TEMP "win-sound-scanner-codesign.pfx"
+          [System.IO.File]::WriteAllBytes($certPath, [Convert]::FromBase64String("${{ secrets.WIN_SOUND_SIGN_PFX_BASE64 }}"))
+          "WIN_SOUND_SIGN_PFX_PATH=$certPath" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          "WIN_SOUND_SIGN_PFX_PASSWORD=${{ secrets.WIN_SOUND_SIGN_PFX_PASSWORD }}" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
 
-          $rcTemplatePath = Join-Path $PWD "cmd/win-sound-scanner/versioninfo.rc"
-          $rcBuildPath = Join-Path $Env:TEMP "win-sound-scanner-versioninfo.rc"
-          $sysoPath = Join-Path $PWD "cmd/win-sound-scanner/versioninfo_windows.syso"
-          $windresPath = "C:\tools\llvm-mingw\bin\x86_64-w64-mingw32-windres.exe"
-          $rcContent = Get-Content -LiteralPath $rcTemplatePath -Raw
-          $rcContent = $rcContent.Replace("__APP_NAME__", $Env:APP_NAME)
-          $rcContent = $rcContent.Replace("__APP_VERSION__", $versionText)
-          $rcContent = $rcContent.Replace("__FILE_VERSION__", ($versionParts -join ","))
-          [System.IO.File]::WriteAllText($rcBuildPath, $rcContent, [System.Text.Encoding]::ASCII)
-          & $windresPath --input $rcBuildPath --output $sysoPath --output-format coff
-          if ($LASTEXITCODE -ne 0) {
-            throw "windres failed with exit code $LASTEXITCODE."
-          }
-
-      - name: Build Go binary (CGO, Windows) first time, compiler errors ignored
+      - name: Build Go binary
         shell: powershell
         run: |
-          New-Item -ItemType Directory -Force -Path (Join-Path $PWD "bin") | Out-Null
-
-          $ldflags = "-X $Env:APP_MODULE_PATH/pkg/appinfo.AppName=$Env:APP_NAME -X $Env:APP_MODULE_PATH/pkg/appinfo.Version=$Env:APP_VERSION"
-          Write-Host "[non-fatal] Running initial go build with CGO..."
-          go build -ldflags $ldflags -o (Join-Path $PWD.Path 'bin/win-sound-scanner.exe') ./cmd/win-sound-scanner
-          if ($LASTEXITCODE -ne 0) {
-            Write-Warning "Initial go build failed with exit code $LASTEXITCODE; continuing pipeline as fetch-native and final build may still succeed."
-            # Reset exit code to avoid failing the step
-            $global:LASTEXITCODE = 0
-          }
-
-      - name: Run fetch-native script
-        shell: powershell
-        env:
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_REF_NAME: ${{ github.ref_name }}
-          GITHUB_SHA: ${{ github.sha }}
-          GITHUB_RUN_ID: ${{ github.run_id }}
-        run: |
-          Write-Host "Running fetch-native.ps1 for $Env:GITHUB_REPOSITORY@$Env:GITHUB_REF_NAME (sha $Env:GITHUB_SHA, run $Env:GITHUB_RUN_ID) with APP_VERSION=$Env:APP_VERSION"
-          .\scripts\internal\fetch-native.ps1 -DllOutSubDir "bin"
-
-      - name: Rebuild Go binary after native fetch
-        shell: powershell
-        run: |
-          $ldflags = "-X $Env:APP_MODULE_PATH/pkg/appinfo.AppName=$Env:APP_NAME -X $Env:APP_MODULE_PATH/pkg/appinfo.Version=$Env:APP_VERSION"
-          go build -ldflags $ldflags -o (Join-Path $PWD.Path 'bin/win-sound-scanner.exe') ./cmd/win-sound-scanner
+          .\scripts\build.ps1 -mingwPath "C:\tools\llvm-mingw" -appName $Env:APP_NAME -appVersion $Env:APP_VERSION
 
       - name: Package bin directory
         shell: powershell

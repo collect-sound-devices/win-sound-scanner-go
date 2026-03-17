@@ -40,10 +40,15 @@ $versionText = $appVersion.TrimStart("v")
 .\scripts\internal\version-info.ps1 -appName $appName -appVersion $versionText -mingwPath $mingwPath
 
 $ldflags = "-X $modulePath/pkg/appinfo.AppName=$appName -X $modulePath/pkg/appinfo.Version=$versionText"
+$outputPath = Join-Path $PWD.Path "bin/win-sound-scanner.exe"
 
-go build -v -ldflags $ldflags -o (Join-Path $PWD.Path 'bin/win-sound-scanner.exe') ./cmd/win-sound-scanner
+New-Item -ItemType Directory -Force -Path (Split-Path -Parent $outputPath) | Out-Null
+
+go build -v -ldflags $ldflags -o $outputPath ./cmd/win-sound-scanner
 
 .\scripts\internal\fetch-native.ps1
 
 ## once more
-go build -v -ldflags $ldflags -o (Join-Path $PWD.Path 'bin/win-sound-scanner.exe') ./cmd/win-sound-scanner
+go build -v -ldflags $ldflags -o $outputPath ./cmd/win-sound-scanner
+
+.\scripts\internal\sign-file.ps1 -TargetPath $outputPath
