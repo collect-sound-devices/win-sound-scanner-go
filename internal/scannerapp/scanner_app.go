@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/collect-sound-devices/sound-win-scanner/v4/pkg/soundlibwrap"
-	c "github.com/collect-sound-devices/win-sound-dev-go-bridge/internal/contract"
-	"github.com/collect-sound-devices/win-sound-dev-go-bridge/pkg/appinfo"
+	c "github.com/collect-sound-devices/win-sound-go-bridge/internal/contract"
+	"github.com/collect-sound-devices/win-sound-go-bridge/pkg/appinfo"
 )
 
 type ScannerApp interface {

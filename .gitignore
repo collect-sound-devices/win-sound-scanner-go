@@ -28,6 +28,7 @@ go.work.sum
 .env
 
 bin/
+cmd/win-sound-scanner/*.syso
 
 # Editor/IDE
 .idea/

@@ -1,0 +1,27 @@
+1 VERSIONINFO
+FILEVERSION __FILE_VERSION__
+PRODUCTVERSION __FILE_VERSION__
+FILEFLAGSMASK 0x3fL
+FILEFLAGS 0x0L
+FILEOS 0x40004L
+FILETYPE 0x1L
+FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName", "collect-sound-devices\0"
+            VALUE "FileDescription", "__APP_NAME__\0"
+            VALUE "FileVersion", "__APP_VERSION__\0"
+            VALUE "InternalName", "__APP_NAME__\0"
+            VALUE "OriginalFilename", "__APP_NAME__.exe\0"
+            VALUE "ProductName", "__APP_NAME__\0"
+            VALUE "ProductVersion", "__APP_VERSION__\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0409, 1200
+    END
+END

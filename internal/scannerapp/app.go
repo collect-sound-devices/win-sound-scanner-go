@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	c "github.com/collect-sound-devices/win-sound-dev-go-bridge/internal/contract"
-	"github.com/collect-sound-devices/win-sound-dev-go-bridge/internal/enqueuer"
-	"github.com/collect-sound-devices/win-sound-dev-go-bridge/internal/logging"
-	"github.com/collect-sound-devices/win-sound-dev-go-bridge/internal/rabbitmq"
+	c "github.com/collect-sound-devices/win-sound-go-bridge/internal/contract"
+	"github.com/collect-sound-devices/win-sound-go-bridge/internal/enqueuer"
+	"github.com/collect-sound-devices/win-sound-go-bridge/internal/logging"
+	"github.com/collect-sound-devices/win-sound-go-bridge/internal/rabbitmq"
 )
 
 func NewWithLogger(enqueue func(c.EventType, map[string]string), logger logging.Logger) (ScannerApp, error) {
