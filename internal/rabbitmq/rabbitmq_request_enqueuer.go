@@ -23,25 +23,25 @@ type RabbitMessagePublisher interface {
 type RabbitMqEnqueuer struct {
 	baseCtx        context.Context
 	publisher      RabbitMessagePublisher
-	logger         logging.Logger
+	writeLog       logging.Logf
 	publishTimeout time.Duration
 }
 
-func NewRabbitMqEnqueuerWithContext(baseCtx context.Context, publisher RabbitMessagePublisher, logger logging.Logger) *RabbitMqEnqueuer {
+func NewRabbitMqEnqueuerWithContext(baseCtx context.Context, publisher RabbitMessagePublisher, logf logging.Logf) *RabbitMqEnqueuer {
 	if baseCtx == nil {
 		panic("nil context")
 	}
 	if publisher == nil {
 		panic("nil publisher")
 	}
-	if logger == nil {
-		panic("nil logger")
+	if logf == nil {
+		panic("nil logf")
 	}
 
 	return newRabbitMqEnqueuer(
 		baseCtx,
 		publisher,
-		logger,
+		logf,
 		10*time.Second,
 	)
 }
@@ -49,7 +49,7 @@ func NewRabbitMqEnqueuerWithContext(baseCtx context.Context, publisher RabbitMes
 func newRabbitMqEnqueuer(
 	baseCtx context.Context,
 	publisher RabbitMessagePublisher,
-	logger logging.Logger,
+	logf logging.Logf,
 	publishTimeout time.Duration,
 ) *RabbitMqEnqueuer {
 	if publishTimeout <= 0 {
@@ -59,7 +59,7 @@ func newRabbitMqEnqueuer(
 	return &RabbitMqEnqueuer{
 		baseCtx:        baseCtx,
 		publisher:      publisher,
-		logger:         logger,
+		writeLog:       logf,
 		publishTimeout: publishTimeout,
 	}
 }
@@ -91,7 +91,7 @@ func (e *RabbitMqEnqueuer) EnqueueRequest(request enqueuer.Request) error {
 		return fmt.Errorf("marshal rabbitmq payload: %w", err)
 	}
 
-	e.logf("[info, rabbitmq enqueuer] publishing method=%s urlSuffix=%s", httpRequest, urlSuffix)
+	e.logf("publishing method=%s urlSuffix=%s", httpRequest, urlSuffix)
 
 	ctx, cancel := context.WithTimeout(e.baseCtx, e.publishTimeout)
 	defer cancel()
@@ -183,5 +183,5 @@ func normalizeValue(key string, value string) any {
 }
 
 func (e *RabbitMqEnqueuer) logf(format string, args ...interface{}) {
-	e.logger.Printf(format, args...)
+	e.writeLog(format, args...)
 }

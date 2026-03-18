@@ -8,10 +8,7 @@ import (
 	"github.com/collect-sound-devices/sound-win-scanner/v4/pkg/soundlibwrap"
 )
 
-// Logger is the minimal interface needed for logging in this project.
-type Logger interface {
-	Printf(format string, v ...interface{})
-}
+type Logf func(format string, v ...interface{})
 
 const appLogFlags = log.Ldate | log.Ltime | log.Lmicroseconds | log.Lmsgprefix
 
@@ -27,7 +24,10 @@ func NewPlainLogger() *log.Logger {
 
 // AttachSoundlibwrapBridge forwards soundlibwrap log messages into the provided logger.
 // The logger should typically have no flags/prefix so the embedded timestamp is preserved.
-func AttachSoundlibwrapBridge(logger Logger, prefix string) {
+func AttachSoundlibwrapBridge(logf Logf, prefix string) {
+	if logf == nil {
+		panic("nil logf")
+	}
 	if prefix == "" {
 		prefix = "cpp backend"
 	}
@@ -44,6 +44,6 @@ func AttachSoundlibwrapBridge(logger Logger, prefix string) {
 			levelTag = "error"
 		}
 
-		logger.Printf("%s [%s %s] %s", timestamp, prefix, levelTag, content)
+		logf("%s [%s %s] %s", timestamp, prefix, levelTag, content)
 	})
 }

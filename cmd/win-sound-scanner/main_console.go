@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/collect-sound-devices/win-sound-go-bridge/internal/logging"
 	"github.com/collect-sound-devices/win-sound-go-bridge/internal/scannerapp"
 )
 
@@ -14,6 +15,10 @@ var (
 	modOle32           = syscall.NewLazyDLL("ole32.dll")
 	procCoInitializeEx = modOle32.NewProc("CoInitializeEx")
 	procCoUninitialize = modOle32.NewProc("CoUninitialize")
+
+	infoLogger  = logging.NewLogger("[info] ")
+	errorLogger = logging.NewLogger("[error] ")
+	plainLogger = logging.NewPlainLogger()
 )
 
 //goland:noinspection ALL
@@ -44,7 +49,7 @@ func runScanner(ctx context.Context) error {
 	}
 	defer CoUninitialize()
 
-	if err := scannerapp.Run(ctx); err != nil {
+	if err := scannerapp.Run(ctx, plainLogger.Printf, infoLogger.Printf, errorLogger.Printf); err != nil {
 		return fmt.Errorf("scanner run failed: %w", err)
 	}
 	return nil

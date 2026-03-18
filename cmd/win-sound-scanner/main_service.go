@@ -61,7 +61,7 @@ func (p *scannerProgram) Start(_ service.Service) error {
 	go func() {
 		defer close(done)
 		if err := runScanner(ctx); err != nil && !errors.Is(err, context.Canceled) {
-			log.Printf("[error] scanner failed: %v", err)
+			errorLogger.Printf("scanner failed: %v", err)
 			os.Exit(1)
 		}
 	}()

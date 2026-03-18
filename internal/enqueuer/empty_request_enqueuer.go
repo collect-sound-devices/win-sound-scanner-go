@@ -5,18 +5,18 @@ import (
 )
 
 type EmptyRequestEnqueuer struct {
-	logger logging.Logger
+	logf logging.Logf
 }
 
-func NewEmptyRequestEnqueuer(logger logging.Logger) *EmptyRequestEnqueuer {
-	if logger == nil {
-		panic("nil logger")
+func NewEmptyRequestEnqueuer(logf logging.Logf) *EmptyRequestEnqueuer {
+	if logf == nil {
+		panic("nil logf")
 	}
-	return &EmptyRequestEnqueuer{logger: logger}
+	return &EmptyRequestEnqueuer{logf: logf}
 }
 
 func (e *EmptyRequestEnqueuer) EnqueueRequest(request Request) error {
-	e.logger.Printf(
+	e.logf(
 		"[info, empty enqueuer] event=%d fields=%v",
 		request.Event,
 		request.Fields,
