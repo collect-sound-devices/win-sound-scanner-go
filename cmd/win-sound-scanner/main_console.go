@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/collect-sound-devices/win-sound-go-bridge/internal/logging"
 	"github.com/collect-sound-devices/win-sound-go-bridge/internal/scannerapp"
 )
 
@@ -15,10 +15,6 @@ var (
 	modOle32           = syscall.NewLazyDLL("ole32.dll")
 	procCoInitializeEx = modOle32.NewProc("CoInitializeEx")
 	procCoUninitialize = modOle32.NewProc("CoUninitialize")
-
-	infoLogger  = logging.NewLogger("[info] ")
-	errorLogger = logging.NewLogger("[error] ")
-	plainLogger = logging.NewPlainLogger()
 )
 
 //goland:noinspection ALL
@@ -43,13 +39,20 @@ func CoUninitialize() {
 	procCoUninitialize.Call() // best-effort cleanup; failure is ignored
 }
 
-func runScanner(ctx context.Context) error {
+func runScanner(ctx context.Context, logger *slog.Logger) error {
+	if ctx == nil {
+		panic("nil context")
+	}
+	if logger == nil {
+		panic("nil logger")
+	}
+
 	if err := CoInitializeEx(COINIT_MULTITHREADED); err != nil {
 		return fmt.Errorf("COM initialization failed: %w", err)
 	}
 	defer CoUninitialize()
 
-	if err := scannerapp.Run(ctx, plainLogger.Printf, infoLogger.Printf, errorLogger.Printf); err != nil {
+	if err := scannerapp.Run(ctx, logger); err != nil {
 		return fmt.Errorf("scanner run failed: %w", err)
 	}
 	return nil
@@ -58,5 +61,5 @@ func runScanner(ctx context.Context) error {
 func runConsole() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	return runScanner(ctx)
+	return runScanner(ctx, newAppLogger(os.Stdout).With("component", "console"))
 }

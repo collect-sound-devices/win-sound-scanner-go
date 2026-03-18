@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/collect-sound-devices/win-sound-go-bridge/internal/contract"
 	"github.com/collect-sound-devices/win-sound-go-bridge/internal/enqueuer"
-	"github.com/collect-sound-devices/win-sound-go-bridge/internal/logging"
 )
 
 // RabbitMessagePublisher is the publish contract expected from a RabbitMQ publisher.
@@ -23,25 +23,25 @@ type RabbitMessagePublisher interface {
 type RabbitMqEnqueuer struct {
 	baseCtx        context.Context
 	publisher      RabbitMessagePublisher
-	writeLog       logging.Logf
+	logger         *slog.Logger
 	publishTimeout time.Duration
 }
 
-func NewRabbitMqEnqueuerWithContext(baseCtx context.Context, publisher RabbitMessagePublisher, logf logging.Logf) *RabbitMqEnqueuer {
+func NewRabbitMqEnqueuerWithContext(baseCtx context.Context, publisher RabbitMessagePublisher, logger *slog.Logger) *RabbitMqEnqueuer {
 	if baseCtx == nil {
 		panic("nil context")
 	}
 	if publisher == nil {
 		panic("nil publisher")
 	}
-	if logf == nil {
-		panic("nil logf")
+	if logger == nil {
+		panic("nil logger")
 	}
 
 	return newRabbitMqEnqueuer(
 		baseCtx,
 		publisher,
-		logf,
+		logger,
 		10*time.Second,
 	)
 }
@@ -49,9 +49,18 @@ func NewRabbitMqEnqueuerWithContext(baseCtx context.Context, publisher RabbitMes
 func newRabbitMqEnqueuer(
 	baseCtx context.Context,
 	publisher RabbitMessagePublisher,
-	logf logging.Logf,
+	logger *slog.Logger,
 	publishTimeout time.Duration,
 ) *RabbitMqEnqueuer {
+	if baseCtx == nil {
+		panic("nil context")
+	}
+	if publisher == nil {
+		panic("nil publisher")
+	}
+	if logger == nil {
+		panic("nil logger")
+	}
 	if publishTimeout <= 0 {
 		publishTimeout = 10 * time.Second
 	}
@@ -59,7 +68,7 @@ func newRabbitMqEnqueuer(
 	return &RabbitMqEnqueuer{
 		baseCtx:        baseCtx,
 		publisher:      publisher,
-		writeLog:       logf,
+		logger:         logger,
 		publishTimeout: publishTimeout,
 	}
 }
@@ -91,7 +100,7 @@ func (e *RabbitMqEnqueuer) EnqueueRequest(request enqueuer.Request) error {
 		return fmt.Errorf("marshal rabbitmq payload: %w", err)
 	}
 
-	e.logf("publishing method=%s urlSuffix=%s", httpRequest, urlSuffix)
+	e.logger.Info("publishing request", "method", httpRequest, "urlSuffix", urlSuffix)
 
 	ctx, cancel := context.WithTimeout(e.baseCtx, e.publishTimeout)
 	defer cancel()
@@ -180,8 +189,4 @@ func normalizeValue(key string, value string) any {
 		}
 	}
 	return value
-}
-
-func (e *RabbitMqEnqueuer) logf(format string, args ...interface{}) {
-	e.writeLog(format, args...)
 }

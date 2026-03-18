@@ -8,34 +8,36 @@ import (
 )
 
 func main() {
+	logger := newBootstrapLogger()
+
 	if len(os.Args) > 1 {
 		cmd := strings.ToLower(strings.TrimSpace(os.Args[1]))
 		if !isServiceCommand(cmd) {
-			errorLogger.Fatalf("unsupported command %q (supported: install, uninstall, start, stop, restart)", cmd)
+			fatalLog(logger, "unsupported command", "command", cmd, "supported", "install, uninstall, start, stop, restart")
 		}
 
 		svc, err := newService()
 		if err != nil {
-			errorLogger.Fatalf("service initialization failed: %v", err)
+			fatalLog(logger, "service initialization failed", "err", err)
 		}
 		if err := service.Control(svc, cmd); err != nil {
-			errorLogger.Fatalf("service command %q failed: %v", cmd, err)
+			fatalLog(logger, "service command failed", "command", cmd, "err", err)
 		}
 		return
 	}
 
 	if service.Interactive() {
 		if err := runConsole(); err != nil {
-			errorLogger.Fatalf("exit with error: %v", err)
+			fatalLog(logger, "exit with error", "err", err)
 		}
 		return
 	}
 
 	svc, err := newService()
 	if err != nil {
-		errorLogger.Fatalf("service initialization failed: %v", err)
+		fatalLog(logger, "service initialization failed", "err", err)
 	}
 	if err := svc.Run(); err != nil {
-		errorLogger.Fatalf("service run failed: %v", err)
+		fatalLog(logger, "service run failed", "err", err)
 	}
 }
