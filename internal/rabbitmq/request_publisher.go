@@ -7,18 +7,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/collect-sound-devices/win-sound-go-bridge/internal/logging"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
-
-// Logger is the minimal logger contract needed by the publisher.
-type Logger interface {
-	Printf(format string, v ...interface{})
-}
 
 // RequestPublisher manages RabbitMQ connection, topology, and message publishing.
 type RequestPublisher struct {
 	cfg    Config
-	logger Logger
+	logger logging.Logger
 
 	mu       sync.Mutex
 	conn     *amqp.Connection
@@ -26,7 +22,7 @@ type RequestPublisher struct {
 	confirms <-chan amqp.Confirmation
 }
 
-func NewRequestPublisher(ctx context.Context, cfg Config, logger Logger) (*RequestPublisher, error) {
+func NewRequestPublisher(ctx context.Context, cfg Config, logger logging.Logger) (*RequestPublisher, error) {
 	if ctx == nil {
 		panic("nil context")
 	}

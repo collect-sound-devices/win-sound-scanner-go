@@ -13,22 +13,16 @@ type Logger interface {
 	Printf(format string, v ...interface{})
 }
 
-// NewAppLogger builds the default logger used by the scanner app.
-func NewAppLogger() *log.Logger {
-	return log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lmicroseconds)
+const appLogFlags = log.Ldate | log.Ltime | log.Lmicroseconds | log.Lmsgprefix
+
+// NewLogger builds a timestamped logger for app messages.
+func NewLogger(prefix string) *log.Logger {
+	return log.New(os.Stdout, prefix, appLogFlags)
 }
 
 // NewPlainLogger builds a logger without any prefix/flags, useful for bridging messages that already include timestamps.
 func NewPlainLogger() *log.Logger {
 	return log.New(os.Stdout, "", 0)
-}
-
-func PrintInfo(logger Logger, format string, v ...interface{}) {
-	logger.Printf("[info] "+format, v...)
-}
-
-func PrintError(logger Logger, format string, v ...interface{}) {
-	logger.Printf("[error] "+format, v...)
 }
 
 // AttachSoundlibwrapBridge forwards soundlibwrap log messages into the provided logger.

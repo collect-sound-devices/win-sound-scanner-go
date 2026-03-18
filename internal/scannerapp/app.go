@@ -13,16 +13,14 @@ import (
 	"github.com/collect-sound-devices/win-sound-go-bridge/internal/rabbitmq"
 )
 
-func NewWithLogger(enqueue func(c.EventType, map[string]string), logger logging.Logger) (ScannerApp, error) {
-	return NewImpl(
-		enqueue,
-		func(format string, v ...interface{}) { logging.PrintInfo(logger, format, v...) },
-		func(format string, v ...interface{}) { logging.PrintError(logger, format, v...) },
-	)
+func NewWithLoggers(enqueue func(c.EventType, map[string]string), infoLogger, errorLogger logging.Logger) (ScannerApp, error) {
+	return NewImpl(enqueue, infoLogger, errorLogger)
 }
 
 func Run(ctx context.Context) error {
-	appLogger := logging.NewAppLogger()
+	appLogger := logging.NewLogger("")
+	infoLogger := logging.NewLogger("[info] ")
+	errorLogger := logging.NewLogger("[error] ")
 	reqEnqueuer, cleanupEnqueuer, err := newRequestEnqueuer(ctx, appLogger)
 	if err != nil {
 		return err
@@ -35,7 +33,7 @@ func Run(ctx context.Context) error {
 			Event:     event,
 			Fields:    fields,
 		}); err != nil {
-			logging.PrintError(appLogger, "enqueue failed: %v", err)
+			errorLogger.Printf("enqueue failed: %v", err)
 		}
 	}
 
@@ -43,9 +41,9 @@ func Run(ctx context.Context) error {
 		logging.AttachSoundlibwrapBridge(logging.NewPlainLogger(), "cpp backend,")
 	}
 
-	logging.PrintInfo(appLogger, "Initializing...")
+	infoLogger.Printf("Initializing...")
 
-	app, err := NewWithLogger(enqueue, appLogger)
+	app, err := NewWithLoggers(enqueue, infoLogger, errorLogger)
 	if err != nil {
 		return err
 	}
@@ -53,7 +51,7 @@ func Run(ctx context.Context) error {
 
 	// Keep running until interrupted to receive async logs and change events.
 	<-ctx.Done()
-	logging.PrintInfo(appLogger, "Shutting down...")
+	infoLogger.Printf("Shutting down...")
 	return nil
 }
 
@@ -83,7 +81,7 @@ func newRequestEnqueuer(ctx context.Context, logger logging.Logger) (enqueuer.En
 	reqEnqueuer := rabbitmq.NewRabbitMqEnqueuerWithContext(ctx, publisher, logger)
 	cleanup := func() {
 		if err := reqEnqueuer.Close(); err != nil {
-			logging.PrintError(logger, "rabbitmq enqueuer close failed: %v", err)
+			logger.Printf("[error] rabbitmq enqueuer close failed: %v", err)
 		}
 	}
 
