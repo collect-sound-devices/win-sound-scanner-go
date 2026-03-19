@@ -1,14 +1,14 @@
 package enqueuer
 
 import (
-	"github.com/collect-sound-devices/win-sound-go-bridge/internal/logging"
+	"log/slog"
 )
 
 type EmptyRequestEnqueuer struct {
-	logger logging.Logger
+	logger *slog.Logger
 }
 
-func NewEmptyRequestEnqueuer(logger logging.Logger) *EmptyRequestEnqueuer {
+func NewEmptyRequestEnqueuer(logger *slog.Logger) *EmptyRequestEnqueuer {
 	if logger == nil {
 		panic("nil logger")
 	}
@@ -16,10 +16,6 @@ func NewEmptyRequestEnqueuer(logger logging.Logger) *EmptyRequestEnqueuer {
 }
 
 func (e *EmptyRequestEnqueuer) EnqueueRequest(request Request) error {
-	e.logger.Printf(
-		"[info, empty enqueuer] event=%d fields=%v",
-		request.Event,
-		request.Fields,
-	)
+	e.logger.Info("dropping request in empty enqueuer", "event", request.Event, "fields", request.Fields)
 	return nil
 }

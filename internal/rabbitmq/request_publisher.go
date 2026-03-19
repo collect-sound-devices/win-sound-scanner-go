@@ -4,21 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-// Logger is the minimal logger contract needed by the publisher.
-type Logger interface {
-	Printf(format string, v ...interface{})
-}
-
 // RequestPublisher manages RabbitMQ connection, topology, and message publishing.
 type RequestPublisher struct {
 	cfg    Config
-	logger Logger
+	logger *slog.Logger
 
 	mu       sync.Mutex
 	conn     *amqp.Connection
@@ -26,7 +22,7 @@ type RequestPublisher struct {
 	confirms <-chan amqp.Confirmation
 }
 
-func NewRequestPublisher(ctx context.Context, cfg Config, logger Logger) (*RequestPublisher, error) {
+func NewRequestPublisher(ctx context.Context, cfg Config, logger *slog.Logger) (*RequestPublisher, error) {
 	if ctx == nil {
 		panic("nil context")
 	}
@@ -64,7 +60,7 @@ func (p *RequestPublisher) Publish(ctx context.Context, body []byte) error {
 	if err := p.publishLocked(ctx, body); err == nil {
 		return nil
 	} else {
-		p.logf("[warn] RabbitMQ publish failed, reconnecting once: %v", err)
+		p.logger.Warn("RabbitMQ publish failed, reconnecting once", "err", err)
 		if recErr := p.connectWithRetryLocked(ctx); recErr != nil {
 			return fmt.Errorf("rabbitmq publish failed: %w (reconnect failed: %v)", err, recErr)
 		}
@@ -126,7 +122,7 @@ func (p *RequestPublisher) publishLocked(ctx context.Context, body []byte) error
 		if !c.Ack {
 			return fmt.Errorf("message NOT ACKed (deliveryTag=%d)", c.DeliveryTag)
 		}
-		p.logf("[debug] Message ACKed (routingKey=%s)", p.cfg.RoutingKey)
+		p.logger.Info("RabbitMQ message ACKed", "routingKey", p.cfg.RoutingKey, "deliveryTag", c.DeliveryTag)
 		return nil
 	case <-ctx.Done():
 		return ctx.Err()
@@ -141,14 +137,24 @@ func (p *RequestPublisher) connectWithRetryLocked(ctx context.Context) error {
 
 	for attempt := 1; attempt <= p.cfg.MaxReconnectionAttempts; attempt++ {
 		if err := p.connectOnceLocked(); err == nil {
-			p.logf("[info] RabbitMQ producer initialized on attempt %d", attempt)
+			p.logger.Info("RabbitMQ producer initialized", "attempt", attempt)
 			return nil
 		} else {
 			lastErr = err
 			if attempt == p.cfg.MaxReconnectionAttempts {
 				break
 			}
-			p.logf("[warn] RabbitMQ init attempt %d/%d failed: %v. Retrying in %s...", attempt, p.cfg.MaxReconnectionAttempts, err, delay)
+			p.logger.Warn(
+				"RabbitMQ init attempt failed; retrying",
+				"attempt",
+				attempt,
+				"maxAttempts",
+				p.cfg.MaxReconnectionAttempts,
+				"retryDelay",
+				delay,
+				"err",
+				err,
+			)
 
 			timer := time.NewTimer(delay)
 			select {
@@ -258,10 +264,6 @@ func (p *RequestPublisher) closeLocked() error {
 	p.confirms = nil
 
 	return err
-}
-
-func (p *RequestPublisher) logf(format string, v ...interface{}) {
-	p.logger.Printf(format, v...)
 }
 
 func minDuration(a, b time.Duration) time.Duration {

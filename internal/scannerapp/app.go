@@ -3,6 +3,7 @@ package scannerapp
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 	"time"
@@ -13,17 +14,21 @@ import (
 	"github.com/collect-sound-devices/win-sound-go-bridge/internal/rabbitmq"
 )
 
-func NewWithLogger(enqueue func(c.EventType, map[string]string), logger logging.Logger) (ScannerApp, error) {
-	return NewImpl(
-		enqueue,
-		func(format string, v ...interface{}) { logging.PrintInfo(logger, format, v...) },
-		func(format string, v ...interface{}) { logging.PrintError(logger, format, v...) },
-	)
+func New(enqueue func(c.EventType, map[string]string), logger *slog.Logger) (ScannerApp, error) {
+	return NewImpl(enqueue, logger)
 }
 
-func Run(ctx context.Context) error {
-	appLogger := logging.NewAppLogger()
-	reqEnqueuer, cleanupEnqueuer, err := newRequestEnqueuer(ctx, appLogger)
+func Run(ctx context.Context, logger *slog.Logger) error {
+	if ctx == nil {
+		panic("nil context")
+	}
+	if logger == nil {
+		panic("nil logger")
+	}
+
+	appLogger := logging.WithComponent(logger, "scannerapp")
+
+	reqEnqueuer, cleanupEnqueuer, err := newRequestEnqueuer(ctx, logger)
 	if err != nil {
 		return err
 	}
@@ -35,17 +40,15 @@ func Run(ctx context.Context) error {
 			Event:     event,
 			Fields:    fields,
 		}); err != nil {
-			logging.PrintError(appLogger, "enqueue failed: %v", err)
+			appLogger.Error("enqueue failed", "event", event, "err", err)
 		}
 	}
 
-	{
-		logging.AttachSoundlibwrapBridge(logging.NewPlainLogger(), "cpp backend,")
-	}
+	logging.AttachSoundlibwrapBridge(logging.WithComponent(logger, "cpp_backend"))
 
-	logging.PrintInfo(appLogger, "Initializing...")
+	appLogger.Info("Initializing")
 
-	app, err := NewWithLogger(enqueue, appLogger)
+	app, err := New(enqueue, appLogger)
 	if err != nil {
 		return err
 	}
@@ -53,16 +56,24 @@ func Run(ctx context.Context) error {
 
 	// Keep running until interrupted to receive async logs and change events.
 	<-ctx.Done()
-	logging.PrintInfo(appLogger, "Shutting down...")
+	appLogger.Info("Shutting down")
 	return nil
 }
 
-func newRequestEnqueuer(ctx context.Context, logger logging.Logger) (enqueuer.EnqueueRequest, func(), error) {
+func newRequestEnqueuer(ctx context.Context, logger *slog.Logger) (enqueuer.EnqueueRequest, func(), error) {
+	if ctx == nil {
+		panic("nil context")
+	}
+	if logger == nil {
+		panic("nil logger")
+	}
+
 	mode := strings.ToLower(strings.TrimSpace(os.Getenv(EnvWinSoundEnqueuer)))
+	requestLogger := logging.WithComponent(logger, "request_enqueuer")
 
 	// Return a no-op enqueuer for testing or when RabbitMQ is not available.
 	if mode == "empty" {
-		return enqueuer.NewEmptyRequestEnqueuer(logger), func() {}, nil
+		return enqueuer.NewEmptyRequestEnqueuer(logging.WithComponent(logger, "empty_request_enqueuer")), func() {}, nil
 	}
 
 	// Validate that the configured mode is supported.
@@ -75,15 +86,15 @@ func newRequestEnqueuer(ctx context.Context, logger logging.Logger) (enqueuer.En
 		return nil, nil, err
 	}
 
-	publisher, err := rabbitmq.NewRequestPublisher(ctx, cfg, logger)
+	publisher, err := rabbitmq.NewRequestPublisher(ctx, cfg, logging.WithComponent(logger, "rabbitmq_publisher"))
 	if err != nil {
 		return nil, nil, err
 	}
 
-	reqEnqueuer := rabbitmq.NewRabbitMqEnqueuerWithContext(ctx, publisher, logger)
+	reqEnqueuer := rabbitmq.NewRabbitMqEnqueuerWithContext(ctx, publisher, logging.WithComponent(logger, "rabbitmq_enqueuer"))
 	cleanup := func() {
 		if err := reqEnqueuer.Close(); err != nil {
-			logging.PrintError(logger, "rabbitmq enqueuer close failed: %v", err)
+			requestLogger.Error("rabbitmq enqueuer close failed", "err", err)
 		}
 	}
 

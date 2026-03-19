@@ -1,55 +1,67 @@
 package logging
 
 import (
-	"log"
-	"os"
+	"context"
+	"io"
+	"log/slog"
 	"strings"
 
 	"github.com/collect-sound-devices/sound-win-scanner/v4/pkg/soundlibwrap"
 )
 
-// Logger is the minimal interface needed for logging in this project.
-type Logger interface {
-	Printf(format string, v ...interface{})
+// NewLogger builds a structured app logger.
+func NewLogger(writer io.Writer, level slog.Leveler) *slog.Logger {
+	if writer == nil {
+		panic("nil writer")
+	}
+	if level == nil {
+		panic("nil level")
+	}
+
+	return slog.New(slog.NewTextHandler(writer, &slog.HandlerOptions{Level: level}))
 }
 
-// NewAppLogger builds the default logger used by the scanner app.
-func NewAppLogger() *log.Logger {
-	return log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lmicroseconds)
-}
-
-// NewPlainLogger builds a logger without any prefix/flags, useful for bridging messages that already include timestamps.
-func NewPlainLogger() *log.Logger {
-	return log.New(os.Stdout, "", 0)
-}
-
-func PrintInfo(logger Logger, format string, v ...interface{}) {
-	logger.Printf("[info] "+format, v...)
-}
-
-func PrintError(logger Logger, format string, v ...interface{}) {
-	logger.Printf("[error] "+format, v...)
+// WithComponent adds a component attribute when one is provided.
+func WithComponent(logger *slog.Logger, component string) *slog.Logger {
+	if logger == nil {
+		panic("nil logger")
+	}
+	component = strings.TrimSpace(component)
+	if component == "" {
+		return logger
+	}
+	return logger.With("component", component)
 }
 
 // AttachSoundlibwrapBridge forwards soundlibwrap log messages into the provided logger.
-// The logger should typically have no flags/prefix so the embedded timestamp is preserved.
-func AttachSoundlibwrapBridge(logger Logger, prefix string) {
-	if prefix == "" {
-		prefix = "cpp backend"
+func AttachSoundlibwrapBridge(logger *slog.Logger) {
+	if logger == nil {
+		panic("nil logger")
 	}
 
 	soundlibwrap.SetLogHandler(func(timestamp, level, content string) {
-		lvl := strings.ToLower(level)
-		levelTag := "info"
-		switch lvl {
-		case "trace", "debug":
-			levelTag = "debug"
-		case "warn", "warning":
-			levelTag = "warn"
-		case "error", "critical":
-			levelTag = "error"
+		nativeLevel := strings.ToLower(strings.TrimSpace(level))
+		args := make([]any, 0, 4)
+		if nativeLevel != "" {
+			args = append(args, "native_level", nativeLevel)
+		}
+		if timestamp = strings.TrimSpace(timestamp); timestamp != "" {
+			args = append(args, "native_timestamp", timestamp)
 		}
 
-		logger.Printf("%s [%s %s] %s", timestamp, prefix, levelTag, content)
+		logger.Log(context.Background(), mapSoundlibwrapLevel(nativeLevel), content, args...)
 	})
+}
+
+func mapSoundlibwrapLevel(level string) slog.Level {
+	switch level {
+	case "trace", "debug":
+		return slog.LevelDebug
+	case "warn", "warning":
+		return slog.LevelWarn
+	case "error", "critical":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
 }

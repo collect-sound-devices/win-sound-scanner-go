@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/collect-sound-devices/win-sound-go-bridge/internal/contract"
 	"github.com/collect-sound-devices/win-sound-go-bridge/internal/enqueuer"
-	"github.com/collect-sound-devices/win-sound-go-bridge/internal/logging"
 )
 
 // RabbitMessagePublisher is the publish contract expected from a RabbitMQ publisher.
@@ -23,11 +23,11 @@ type RabbitMessagePublisher interface {
 type RabbitMqEnqueuer struct {
 	baseCtx        context.Context
 	publisher      RabbitMessagePublisher
-	logger         logging.Logger
+	logger         *slog.Logger
 	publishTimeout time.Duration
 }
 
-func NewRabbitMqEnqueuerWithContext(baseCtx context.Context, publisher RabbitMessagePublisher, logger logging.Logger) *RabbitMqEnqueuer {
+func NewRabbitMqEnqueuerWithContext(baseCtx context.Context, publisher RabbitMessagePublisher, logger *slog.Logger) *RabbitMqEnqueuer {
 	if baseCtx == nil {
 		panic("nil context")
 	}
@@ -49,9 +49,18 @@ func NewRabbitMqEnqueuerWithContext(baseCtx context.Context, publisher RabbitMes
 func newRabbitMqEnqueuer(
 	baseCtx context.Context,
 	publisher RabbitMessagePublisher,
-	logger logging.Logger,
+	logger *slog.Logger,
 	publishTimeout time.Duration,
 ) *RabbitMqEnqueuer {
+	if baseCtx == nil {
+		panic("nil context")
+	}
+	if publisher == nil {
+		panic("nil publisher")
+	}
+	if logger == nil {
+		panic("nil logger")
+	}
 	if publishTimeout <= 0 {
 		publishTimeout = 10 * time.Second
 	}
@@ -91,7 +100,7 @@ func (e *RabbitMqEnqueuer) EnqueueRequest(request enqueuer.Request) error {
 		return fmt.Errorf("marshal rabbitmq payload: %w", err)
 	}
 
-	e.logf("[info, rabbitmq enqueuer] publishing method=%s urlSuffix=%s", httpRequest, urlSuffix)
+	e.logger.Info("publishing request", "method", httpRequest, "urlSuffix", urlSuffix)
 
 	ctx, cancel := context.WithTimeout(e.baseCtx, e.publishTimeout)
 	defer cancel()
@@ -180,8 +189,4 @@ func normalizeValue(key string, value string) any {
 		}
 	}
 	return value
-}
-
-func (e *RabbitMqEnqueuer) logf(format string, args ...interface{}) {
-	e.logger.Printf(format, args...)
 }

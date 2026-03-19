@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -38,13 +39,20 @@ func CoUninitialize() {
 	procCoUninitialize.Call() // best-effort cleanup; failure is ignored
 }
 
-func runScanner(ctx context.Context) error {
+func runScanner(ctx context.Context, logger *slog.Logger) error {
+	if ctx == nil {
+		panic("nil context")
+	}
+	if logger == nil {
+		panic("nil logger")
+	}
+
 	if err := CoInitializeEx(COINIT_MULTITHREADED); err != nil {
 		return fmt.Errorf("COM initialization failed: %w", err)
 	}
 	defer CoUninitialize()
 
-	if err := scannerapp.Run(ctx); err != nil {
+	if err := scannerapp.Run(ctx, logger); err != nil {
 		return fmt.Errorf("scanner run failed: %w", err)
 	}
 	return nil
@@ -53,5 +61,5 @@ func runScanner(ctx context.Context) error {
 func runConsole() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	return runScanner(ctx)
+	return runScanner(ctx, newAppLogger(os.Stdout).With("component", "console"))
 }

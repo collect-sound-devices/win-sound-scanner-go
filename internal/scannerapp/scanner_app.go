@@ -1,6 +1,7 @@
 package scannerapp
 
 import (
+	"log/slog"
 	"os"
 	"strconv"
 	"strings"
@@ -20,17 +21,22 @@ type ScannerApp interface {
 type scannerAppImpl struct {
 	soundLibHandle soundlibwrap.Handle
 	enqueueFunc    func(c.EventType, map[string]string)
-	logInfo        func(string, ...interface{})
-	logError       func(string, ...interface{})
+	logger         *slog.Logger
 	osName         string
 	hostName       string
 }
 
-func NewImpl(enqueue func(c.EventType, map[string]string), logInfo func(string, ...interface{}), logError func(string, ...interface{})) (*scannerAppImpl, error) {
+func NewImpl(enqueue func(c.EventType, map[string]string), logger *slog.Logger) (*scannerAppImpl, error) {
+	if enqueue == nil {
+		panic("nil enqueue")
+	}
+	if logger == nil {
+		panic("nil logger")
+	}
+
 	app := &scannerAppImpl{
 		enqueueFunc: enqueue,
-		logInfo:     logInfo,
-		logError:    logError,
+		logger:      logger,
 	}
 	app.attachHandlers()
 	if err := app.init(); err != nil {
@@ -58,14 +64,14 @@ func (app *scannerAppImpl) init() error {
 	}
 
 	if osName, err := soundlibwrap.GetExtendedOperatingSystemName(app.soundLibHandle); err != nil || strings.TrimSpace(osName) == "" {
-		app.logInfo("Cannot get OS name")
+		app.logger.Warn("Cannot get OS name", "err", err)
 		app.osName = "Unknown OS"
 	} else {
 		app.osName = osName
 	}
 
 	if hostName, err := os.Hostname(); err != nil || strings.TrimSpace(hostName) == "" {
-		app.logInfo("Cannot get host name")
+		app.logger.Warn("Cannot get host name", "err", err)
 		app.hostName = "unknown-host"
 	} else {
 		app.hostName = hostName
@@ -81,7 +87,7 @@ func (app *scannerAppImpl) attachHandlers() {
 			app.RepostRenderDeviceToApi(c.EventTypeRenderDeviceDiscovered)
 		} else {
 			// not yet implemented removeDeviceToApi
-			app.logInfo("Render device removed")
+			app.logger.Info("Render device removed")
 		}
 	})
 	soundlibwrap.SetDefaultCaptureHandler(func(present bool) {
@@ -89,7 +95,7 @@ func (app *scannerAppImpl) attachHandlers() {
 			app.RepostCaptureDeviceToApi(c.EventTypeCaptureDeviceDiscovered)
 		} else {
 			// not yet implemented removeDeviceToApi
-			app.logInfo("Capture device removed")
+			app.logger.Info("Capture device removed")
 		}
 	})
 
@@ -97,17 +103,17 @@ func (app *scannerAppImpl) attachHandlers() {
 	soundlibwrap.SetRenderVolumeChangedHandler(func() {
 		if desc, err := soundlibwrap.GetDefaultRender(app.soundLibHandle); err == nil {
 			app.putVolumeChangeToApi(c.EventTypeRenderVolumeChanged, desc.PnpID, int(desc.RenderVolume))
-			app.logInfo("Render volume changed: name=%q pnpId=%q vol=%d", desc.Name, desc.PnpID, desc.RenderVolume)
+			app.logger.Info("Render volume changed", "name", desc.Name, "pnpId", desc.PnpID, "volume", desc.RenderVolume)
 		} else {
-			app.logError("Render volume changed, can not read it: %v", err)
+			app.logger.Error("Render volume changed, cannot read it", "err", err)
 		}
 	})
 	soundlibwrap.SetCaptureVolumeChangedHandler(func() {
 		if desc, err := soundlibwrap.GetDefaultCapture(app.soundLibHandle); err == nil {
 			app.putVolumeChangeToApi(c.EventTypeCaptureVolumeChanged, desc.PnpID, int(desc.CaptureVolume))
-			app.logInfo("Capture volume changed: name=%q pnpId=%q vol=%d", desc.Name, desc.PnpID, desc.CaptureVolume)
+			app.logger.Info("Capture volume changed", "name", desc.Name, "pnpId", desc.PnpID, "volume", desc.CaptureVolume)
 		} else {
-			app.logError("Capture volume changed, can not read it: %v", err)
+			app.logger.Error("Capture volume changed, cannot read it", "err", err)
 		}
 	})
 }
@@ -137,9 +143,19 @@ func (app *scannerAppImpl) RepostRenderDeviceToApi(event c.EventType) {
 		renderVolume := int(desc.RenderVolume)
 		captureVolume := int(desc.CaptureVolume)
 		app.postDeviceToApi(event, desc.Name, desc.PnpID, renderVolume, captureVolume)
-		app.logInfo("Render device identified and updated: name=%q pnpId=%q renderVol=%d captureVol=%d", desc.Name, desc.PnpID, desc.RenderVolume, desc.CaptureVolume)
+		app.logger.Info(
+			"Render device identified and updated",
+			"name",
+			desc.Name,
+			"pnpId",
+			desc.PnpID,
+			"renderVolume",
+			desc.RenderVolume,
+			"captureVolume",
+			desc.CaptureVolume,
+		)
 	} else {
-		app.logError("Render device can not be identified: %v", err)
+		app.logger.Error("Render device cannot be identified", "err", err)
 	}
 }
 
@@ -148,9 +164,19 @@ func (app *scannerAppImpl) RepostCaptureDeviceToApi(event c.EventType) {
 		renderVolume := int(desc.RenderVolume)
 		captureVolume := int(desc.CaptureVolume)
 		app.postDeviceToApi(event, desc.Name, desc.PnpID, renderVolume, captureVolume)
-		app.logInfo("Capture device identified and updated: name=%q pnpId=%q renderVol=%d captureVol=%d", desc.Name, desc.PnpID, desc.RenderVolume, desc.CaptureVolume)
+		app.logger.Info(
+			"Capture device identified and updated",
+			"name",
+			desc.Name,
+			"pnpId",
+			desc.PnpID,
+			"renderVolume",
+			desc.RenderVolume,
+			"captureVolume",
+			desc.CaptureVolume,
+		)
 	} else {
-		app.logError("Capture device can not be identified: %v", err)
+		app.logger.Error("Capture device cannot be identified", "err", err)
 	}
 }
 
