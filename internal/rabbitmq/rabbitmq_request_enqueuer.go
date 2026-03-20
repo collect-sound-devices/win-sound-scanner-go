@@ -74,6 +74,7 @@ func newRabbitMqEnqueuer(
 }
 
 func (e *RabbitMqEnqueuer) EnqueueRequest(request enqueuer.Request) error {
+	e.logger.Info("Dropping request in RabbitMQ enqueuer", "event", request.Event, "fields", request.Fields)
 	payload := make(map[string]any, len(request.Fields)+4)
 	for key, value := range request.Fields {
 		payload[key] = normalizeValue(key, value)
