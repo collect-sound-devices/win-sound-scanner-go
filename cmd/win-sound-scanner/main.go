@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	logger := newBootstrapLogger()
+	logger := newStderrLogger()
 
 	if len(os.Args) > 1 {
 		cmd := strings.ToLower(strings.TrimSpace(os.Args[1]))

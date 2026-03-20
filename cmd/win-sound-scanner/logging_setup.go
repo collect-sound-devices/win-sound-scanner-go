@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-// NewLogger builds a structured app logger.
+// newAppLogger builds a structured app logger.
 func newAppLogger(writer io.Writer) *slog.Logger {
 	if writer == nil {
 		panic("nil writer")
@@ -18,13 +18,13 @@ func newAppLogger(writer io.Writer) *slog.Logger {
 		With("app", serviceName)
 }
 
-func newBootstrapLogger() *slog.Logger {
+func newStderrLogger() *slog.Logger {
 	return newAppLogger(os.Stderr)
 }
 
 func fatalLog(logger *slog.Logger, message string, args ...any) {
 	if logger == nil {
-		logger = newBootstrapLogger()
+		logger = newStderrLogger()
 	}
 	logger.Error(message, args...)
 	os.Exit(1)
