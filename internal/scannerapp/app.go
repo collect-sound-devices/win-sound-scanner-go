@@ -36,14 +36,14 @@ func Run(ctx context.Context, logger *slog.Logger) error {
 	appLogger := WithComponent(logger, "go-app-host")
 
 	appLogger.Info("Initializing. Creating request enqueuer.")
-	reqEnqueuer, cleanupEnqueuer, err := newRequestEnqueuer(ctx, WithComponent(logger, "enqueuer"))
+	reqEnqueuer, cleanupEnqueuer, err := newRequestEnqueuer(ctx, logger)
 	if err != nil {
 		return err
 	}
 	defer cleanupEnqueuer()
 
 	enqueue := func(event c.EventType, fields map[string]string) {
-		appLogger.Error("Enqueue request..")
+		appLogger.Info("Enqueue request..")
 		if err := reqEnqueuer.EnqueueRequest(enqueuer.Request{
 			Timestamp: time.Now(),
 			Event:     event,
@@ -80,6 +80,7 @@ func newRequestEnqueuer(ctx context.Context, logger *slog.Logger) (enqueuer.Enqu
 
 	// Return a no-op enqueuer for testing or when RabbitMQ is not available.
 	if mode == "empty" {
+		requestLogger.Info("Creating empty request enqueuer...")
 		return enqueuer.NewEmptyRequestEnqueuer(WithComponent(logger, "empty_request_enqueuer")), func() {}, nil
 	}
 
@@ -93,15 +94,17 @@ func newRequestEnqueuer(ctx context.Context, logger *slog.Logger) (enqueuer.Enqu
 		return nil, nil, err
 	}
 
+	requestLogger.Info("Creating RabbitMQ request publisher...")
 	publisher, err := rabbitmq.NewRequestPublisher(ctx, cfg, WithComponent(logger, "rabbitmq_publisher"))
 	if err != nil {
 		return nil, nil, err
 	}
 
+	requestLogger.Info("Creating RabbitMQ request enqueuer...")
 	reqEnqueuer := rabbitmq.NewRabbitMqEnqueuerWithContext(ctx, publisher, WithComponent(logger, "rabbitmq_enqueuer"))
 	cleanup := func() {
 		if err := reqEnqueuer.Close(); err != nil {
-			requestLogger.Error("rabbitmq enqueuer close failed", "err", err)
+			requestLogger.Error("Rabbitmq enqueuer close failed", "err", err)
 		}
 	}
 
