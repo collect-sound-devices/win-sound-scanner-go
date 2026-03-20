@@ -1,6 +1,7 @@
 package scannerapp
 
 import (
+	"context"
 	"log/slog"
 	"os"
 	"strconv"
@@ -8,8 +9,8 @@ import (
 	"time"
 
 	"github.com/collect-sound-devices/sound-win-scanner/v4/pkg/soundlibwrap"
-	c "github.com/collect-sound-devices/win-sound-go-bridge/internal/contract"
-	"github.com/collect-sound-devices/win-sound-go-bridge/pkg/appinfo"
+	c "github.com/collect-sound-devices/win-sound-scanner-go/internal/contract"
+	"github.com/collect-sound-devices/win-sound-scanner-go/pkg/appinfo"
 )
 
 type ScannerApp interface {
@@ -81,6 +82,34 @@ func (app *scannerAppImpl) init() error {
 }
 
 func (app *scannerAppImpl) attachHandlers() {
+
+	soundlibwrap.SetLogHandler(func(timestamp, level, content string) {
+		nativeLevel := strings.ToLower(strings.TrimSpace(level))
+		args := make([]any, 0, 4)
+		if nativeLevel != "" {
+			args = append(args, "native_level", nativeLevel)
+		}
+		if timestamp = strings.TrimSpace(timestamp); timestamp != "" {
+			args = append(args, "native_timestamp", timestamp)
+		}
+
+		getLogLevel := func(level string) slog.Level {
+			switch level {
+			case "trace", "debug":
+				return slog.LevelDebug
+			case "warn", "warning":
+				return slog.LevelWarn
+			case "error", "critical":
+				return slog.LevelError
+			default:
+				return slog.LevelInfo
+			}
+		}
+
+		app.logger.Log(context.Background(), getLogLevel(nativeLevel),
+			content, args...)
+	})
+
 	// Device default change notifications.
 	soundlibwrap.SetDefaultRenderHandler(func(present bool) {
 		if present {

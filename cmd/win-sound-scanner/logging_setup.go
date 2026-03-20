@@ -4,12 +4,18 @@ import (
 	"io"
 	"log/slog"
 	"os"
-
-	"github.com/collect-sound-devices/win-sound-go-bridge/internal/logging"
 )
 
+// NewLogger builds a structured app logger.
 func newAppLogger(writer io.Writer) *slog.Logger {
-	return logging.NewLogger(writer, slog.LevelInfo).With("app", serviceName)
+	if writer == nil {
+		panic("nil writer")
+	}
+	return slog.New(
+		slog.NewTextHandler(
+			writer,
+			&slog.HandlerOptions{Level: slog.LevelInfo})).
+		With("app", serviceName)
 }
 
 func newBootstrapLogger() *slog.Logger {

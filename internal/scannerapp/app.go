@@ -8,14 +8,21 @@ import (
 	"strings"
 	"time"
 
-	c "github.com/collect-sound-devices/win-sound-go-bridge/internal/contract"
-	"github.com/collect-sound-devices/win-sound-go-bridge/internal/enqueuer"
-	"github.com/collect-sound-devices/win-sound-go-bridge/internal/logging"
-	"github.com/collect-sound-devices/win-sound-go-bridge/internal/rabbitmq"
+	c "github.com/collect-sound-devices/win-sound-scanner-go/internal/contract"
+	"github.com/collect-sound-devices/win-sound-scanner-go/internal/enqueuer"
+	"github.com/collect-sound-devices/win-sound-scanner-go/internal/rabbitmq"
 )
 
-func New(enqueue func(c.EventType, map[string]string), logger *slog.Logger) (ScannerApp, error) {
-	return NewImpl(enqueue, logger)
+// WithComponent adds a component attribute when one is provided.
+func WithComponent(logger *slog.Logger, component string) *slog.Logger {
+	if logger == nil {
+		panic("nil logger")
+	}
+	component = strings.TrimSpace(component)
+	if component == "" {
+		return logger
+	}
+	return logger.With("component", component)
 }
 
 func Run(ctx context.Context, logger *slog.Logger) error {
@@ -26,7 +33,7 @@ func Run(ctx context.Context, logger *slog.Logger) error {
 		panic("nil logger")
 	}
 
-	appLogger := logging.WithComponent(logger, "scannerapp")
+	appLogger := WithComponent(logger, "scannerapp")
 
 	reqEnqueuer, cleanupEnqueuer, err := newRequestEnqueuer(ctx, logger)
 	if err != nil {
@@ -44,11 +51,9 @@ func Run(ctx context.Context, logger *slog.Logger) error {
 		}
 	}
 
-	logging.AttachSoundlibwrapBridge(logging.WithComponent(logger, "cpp_backend"))
-
 	appLogger.Info("Initializing")
 
-	app, err := New(enqueue, appLogger)
+	app, err := NewImpl(enqueue, appLogger)
 	if err != nil {
 		return err
 	}
@@ -69,11 +74,11 @@ func newRequestEnqueuer(ctx context.Context, logger *slog.Logger) (enqueuer.Enqu
 	}
 
 	mode := strings.ToLower(strings.TrimSpace(os.Getenv(EnvWinSoundEnqueuer)))
-	requestLogger := logging.WithComponent(logger, "request_enqueuer")
+	requestLogger := WithComponent(logger, "request_enqueuer")
 
 	// Return a no-op enqueuer for testing or when RabbitMQ is not available.
 	if mode == "empty" {
-		return enqueuer.NewEmptyRequestEnqueuer(logging.WithComponent(logger, "empty_request_enqueuer")), func() {}, nil
+		return enqueuer.NewEmptyRequestEnqueuer(WithComponent(logger, "empty_request_enqueuer")), func() {}, nil
 	}
 
 	// Validate that the configured mode is supported.
@@ -86,12 +91,12 @@ func newRequestEnqueuer(ctx context.Context, logger *slog.Logger) (enqueuer.Enqu
 		return nil, nil, err
 	}
 
-	publisher, err := rabbitmq.NewRequestPublisher(ctx, cfg, logging.WithComponent(logger, "rabbitmq_publisher"))
+	publisher, err := rabbitmq.NewRequestPublisher(ctx, cfg, WithComponent(logger, "rabbitmq_publisher"))
 	if err != nil {
 		return nil, nil, err
 	}
 
-	reqEnqueuer := rabbitmq.NewRabbitMqEnqueuerWithContext(ctx, publisher, logging.WithComponent(logger, "rabbitmq_enqueuer"))
+	reqEnqueuer := rabbitmq.NewRabbitMqEnqueuerWithContext(ctx, publisher, WithComponent(logger, "rabbitmq_enqueuer"))
 	cleanup := func() {
 		if err := reqEnqueuer.Close(); err != nil {
 			requestLogger.Error("rabbitmq enqueuer close failed", "err", err)

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/collect-sound-devices/win-sound-go-bridge/internal/contract"
-	"github.com/collect-sound-devices/win-sound-go-bridge/internal/enqueuer"
+	"github.com/collect-sound-devices/win-sound-scanner-go/internal/contract"
+	"github.com/collect-sound-devices/win-sound-scanner-go/internal/enqueuer"
 )
 
 // RabbitMessagePublisher is the publish contract expected from a RabbitMQ publisher.
