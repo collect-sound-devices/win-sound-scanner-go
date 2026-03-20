@@ -33,27 +33,29 @@ func Run(ctx context.Context, logger *slog.Logger) error {
 		panic("nil logger")
 	}
 
-	appLogger := WithComponent(logger, "scannerapp")
+	appLogger := WithComponent(logger, "go-app-host")
 
-	reqEnqueuer, cleanupEnqueuer, err := newRequestEnqueuer(ctx, logger)
+	appLogger.Info("Initializing. Creating request enqueuer.")
+	reqEnqueuer, cleanupEnqueuer, err := newRequestEnqueuer(ctx, WithComponent(logger, "enqueuer"))
 	if err != nil {
 		return err
 	}
 	defer cleanupEnqueuer()
 
 	enqueue := func(event c.EventType, fields map[string]string) {
+		appLogger.Error("Enqueue request..")
 		if err := reqEnqueuer.EnqueueRequest(enqueuer.Request{
 			Timestamp: time.Now(),
 			Event:     event,
 			Fields:    fields,
 		}); err != nil {
-			appLogger.Error("enqueue failed", "event", event, "err", err)
+			appLogger.Error("Enqueue failed", "event", event, "err", err)
 		}
 	}
 
 	appLogger.Info("Initializing")
 
-	app, err := NewImpl(enqueue, appLogger)
+	app, err := NewImpl(enqueue, WithComponent(logger, "cpp-lib-engine"))
 	if err != nil {
 		return err
 	}

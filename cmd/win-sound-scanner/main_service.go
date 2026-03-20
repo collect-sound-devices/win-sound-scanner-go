@@ -54,7 +54,7 @@ func (p *scannerProgram) Start(_ service.Service) error {
 	if err != nil {
 		return err
 	}
-	logger := newAppLogger(logFile).With("component", "service")
+	logger := newAppLogger(logFile)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan struct{})

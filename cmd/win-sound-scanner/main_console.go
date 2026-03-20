@@ -61,5 +61,5 @@ func runScanner(ctx context.Context, logger *slog.Logger) error {
 func runConsole() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	return runScanner(ctx, newAppLogger(os.Stdout).With("component", "console"))
+	return runScanner(ctx, newAppLogger(os.Stdout))
 }

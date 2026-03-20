@@ -14,17 +14,12 @@ func newAppLogger(writer io.Writer) *slog.Logger {
 	return slog.New(
 		slog.NewTextHandler(
 			writer,
-			&slog.HandlerOptions{Level: slog.LevelInfo})).
-		With("app", serviceName)
-}
-
-func newStderrLogger() *slog.Logger {
-	return newAppLogger(os.Stderr)
+			&slog.HandlerOptions{Level: slog.LevelInfo}))
 }
 
 func fatalLog(logger *slog.Logger, message string, args ...any) {
 	if logger == nil {
-		logger = newStderrLogger()
+		logger = newAppLogger(os.Stderr)
 	}
 	logger.Error(message, args...)
 	os.Exit(1)
