@@ -172,17 +172,6 @@ func (app *scannerAppImpl) RepostRenderDeviceToApi(event c.EventType) {
 		renderVolume := int(desc.RenderVolume)
 		captureVolume := int(desc.CaptureVolume)
 		app.postDeviceToApi(event, desc.Name, desc.PnpID, renderVolume, captureVolume)
-		app.logger.Info(
-			"Render device identified and updated",
-			"name",
-			desc.Name,
-			"pnpId",
-			desc.PnpID,
-			"renderVolume",
-			desc.RenderVolume,
-			"captureVolume",
-			desc.CaptureVolume,
-		)
 	} else {
 		app.logger.Error("Render device cannot be identified", "err", err)
 	}
@@ -193,17 +182,6 @@ func (app *scannerAppImpl) RepostCaptureDeviceToApi(event c.EventType) {
 		renderVolume := int(desc.RenderVolume)
 		captureVolume := int(desc.CaptureVolume)
 		app.postDeviceToApi(event, desc.Name, desc.PnpID, renderVolume, captureVolume)
-		app.logger.Info(
-			"Capture device identified and updated",
-			"name",
-			desc.Name,
-			"pnpId",
-			desc.PnpID,
-			"renderVolume",
-			desc.RenderVolume,
-			"captureVolume",
-			desc.CaptureVolume,
-		)
 	} else {
 		app.logger.Error("Capture device cannot be identified", "err", err)
 	}

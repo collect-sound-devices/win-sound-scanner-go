@@ -33,7 +33,7 @@ func Run(ctx context.Context, logger *slog.Logger) error {
 		panic("nil logger")
 	}
 
-	appLogger := WithComponent(logger, "go-app-host")
+	appLogger := WithComponent(logger, "application-root")
 
 	appLogger.Info("Initializing. Creating request enqueuer.")
 	reqEnqueuer, cleanupEnqueuer, err := newRequestEnqueuer(ctx, logger)
@@ -55,7 +55,7 @@ func Run(ctx context.Context, logger *slog.Logger) error {
 
 	appLogger.Info("Initializing")
 
-	app, err := NewImpl(enqueue, WithComponent(logger, "cpp-lib-engine"))
+	app, err := NewImpl(enqueue, WithComponent(logger, " cpp-lib-engine"))
 	if err != nil {
 		return err
 	}
@@ -76,12 +76,12 @@ func newRequestEnqueuer(ctx context.Context, logger *slog.Logger) (enqueuer.Enqu
 	}
 
 	mode := strings.ToLower(strings.TrimSpace(os.Getenv(EnvWinSoundEnqueuer)))
-	requestLogger := WithComponent(logger, "request_enqueuer")
+	requestLogger := WithComponent(logger, "dispatch_enqueuer")
 
 	// Return a no-op enqueuer for testing or when RabbitMQ is not available.
 	if mode == "empty" {
 		requestLogger.Info("Creating empty request enqueuer...")
-		return enqueuer.NewEmptyRequestEnqueuer(WithComponent(logger, "empty_request_enqueuer")), func() {}, nil
+		return enqueuer.NewEmptyRequestEnqueuer(WithComponent(logger, " empty_enqueuer")), func() {}, nil
 	}
 
 	// Validate that the configured mode is supported.
