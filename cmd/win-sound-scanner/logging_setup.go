@@ -57,9 +57,17 @@ func (h *appLogHandler) Handle(_ context.Context, record slog.Record) error {
 		return nil
 	}
 
-	timestamp := record.Time
-	if timestamp.IsZero() {
-		timestamp = time.Now()
+	timestampText := h.findNativeTimestamp("", h.attrs)
+	record.Attrs(func(attr slog.Attr) bool {
+		timestampText = h.findNativeTimestamp(timestampText, []slog.Attr{attr})
+		return true
+	})
+	if timestampText == "" {
+		timestamp := record.Time
+		if timestamp.IsZero() {
+			timestamp = time.Now()
+		}
+		timestampText = timestamp.Local().Format(appLogTimeLayout)
 	}
 
 	var builder strings.Builder
@@ -70,7 +78,7 @@ func (h *appLogHandler) Handle(_ context.Context, record slog.Record) error {
 		component = h.findComponent(component, []slog.Attr{attr})
 		return true
 	})
-	builder.WriteString(timestamp.Local().Format(appLogTimeLayout))
+	builder.WriteString(timestampText)
 	builder.WriteByte(' ')
 	builder.WriteString(appLogLevel(record.Level))
 	builder.WriteString(" [")
@@ -128,6 +136,12 @@ func (h *appLogHandler) appendAttr(builder *strings.Builder, attr slog.Attr) {
 	if attr.Key == "component" {
 		return
 	}
+	if attr.Key == "native_timestamp" {
+		return
+	}
+	if attr.Key == "native_level" {
+		return
+	}
 	if attr.Value.Kind() == slog.KindGroup {
 		for _, child := range attr.Value.Group() {
 			h.appendAttr(builder, child)
@@ -143,6 +157,13 @@ func (h *appLogHandler) appendAttr(builder *strings.Builder, attr slog.Attr) {
 func (h *appLogHandler) findComponent(current string, attrs []slog.Attr) string {
 	for _, attr := range attrs {
 		current = findComponentAttr(current, attr)
+	}
+	return current
+}
+
+func (h *appLogHandler) findNativeTimestamp(current string, attrs []slog.Attr) string {
+	for _, attr := range attrs {
+		current = findNativeTimestampAttr(current, attr)
 	}
 	return current
 }
@@ -166,6 +187,27 @@ func findComponentAttr(current string, attr slog.Attr) string {
 		return appLogUnknownComponent
 	}
 	return component
+}
+
+func findNativeTimestampAttr(current string, attr slog.Attr) string {
+	attr.Value = attr.Value.Resolve()
+	if attr.Equal(slog.Attr{}) {
+		return current
+	}
+	if attr.Value.Kind() == slog.KindGroup {
+		for _, child := range attr.Value.Group() {
+			current = findNativeTimestampAttr(current, child)
+		}
+		return current
+	}
+	if attr.Key != "native_timestamp" {
+		return current
+	}
+	timestamp := strings.TrimSpace(attrValueString(attr.Value))
+	if timestamp == "" {
+		return current
+	}
+	return timestamp
 }
 
 func appendAttrValue(builder *strings.Builder, value slog.Value) {
