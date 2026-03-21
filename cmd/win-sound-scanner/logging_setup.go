@@ -15,6 +15,7 @@ import (
 )
 
 const appLogTimeLayout = "2006-01-02 15:04:05.000000"
+const appLogUnknownComponent = "unknown"
 
 type appLogHandler struct {
 	mu     *sync.Mutex
@@ -63,10 +64,18 @@ func (h *appLogHandler) Handle(_ context.Context, record slog.Record) error {
 
 	var builder strings.Builder
 	builder.Grow(128)
+	component := appLogUnknownComponent
+	component = h.findComponent(component, h.attrs)
+	record.Attrs(func(attr slog.Attr) bool {
+		component = h.findComponent(component, []slog.Attr{attr})
+		return true
+	})
 	builder.WriteString(timestamp.Local().Format(appLogTimeLayout))
 	builder.WriteByte(' ')
 	builder.WriteString(appLogLevel(record.Level))
 	builder.WriteString(" [")
+	builder.WriteString(component)
+	builder.WriteString("] [")
 	builder.WriteString(strconv.FormatUint(uint64(windows.GetCurrentThreadId()), 10))
 	builder.WriteString("] ")
 	builder.WriteString(record.Message)
@@ -116,6 +125,9 @@ func (h *appLogHandler) appendAttr(builder *strings.Builder, attr slog.Attr) {
 	if attr.Equal(slog.Attr{}) || attr.Key == "" {
 		return
 	}
+	if attr.Key == "component" {
+		return
+	}
 	if attr.Value.Kind() == slog.KindGroup {
 		for _, child := range attr.Value.Group() {
 			h.appendAttr(builder, child)
@@ -126,6 +138,34 @@ func (h *appLogHandler) appendAttr(builder *strings.Builder, attr slog.Attr) {
 	builder.WriteString(attr.Key)
 	builder.WriteByte('=')
 	appendAttrValue(builder, attr.Value)
+}
+
+func (h *appLogHandler) findComponent(current string, attrs []slog.Attr) string {
+	for _, attr := range attrs {
+		current = findComponentAttr(current, attr)
+	}
+	return current
+}
+
+func findComponentAttr(current string, attr slog.Attr) string {
+	attr.Value = attr.Value.Resolve()
+	if attr.Equal(slog.Attr{}) {
+		return current
+	}
+	if attr.Value.Kind() == slog.KindGroup {
+		for _, child := range attr.Value.Group() {
+			current = findComponentAttr(current, child)
+		}
+		return current
+	}
+	if attr.Key != "component" {
+		return current
+	}
+	component := strings.TrimSpace(attrValueString(attr.Value))
+	if component == "" {
+		return appLogUnknownComponent
+	}
+	return component
 }
 
 func appendAttrValue(builder *strings.Builder, value slog.Value) {
@@ -163,6 +203,44 @@ func appendAnyValue(builder *strings.Builder, value any) {
 		builder.WriteString(strconv.Quote(v))
 	default:
 		builder.WriteString(fmt.Sprint(v))
+	}
+}
+
+func attrValueString(value slog.Value) string {
+	switch value.Kind() {
+	case slog.KindString:
+		return value.String()
+	case slog.KindInt64:
+		return strconv.FormatInt(value.Int64(), 10)
+	case slog.KindUint64:
+		return strconv.FormatUint(value.Uint64(), 10)
+	case slog.KindFloat64:
+		return strconv.FormatFloat(value.Float64(), 'f', -1, 64)
+	case slog.KindBool:
+		return strconv.FormatBool(value.Bool())
+	case slog.KindDuration:
+		return value.Duration().String()
+	case slog.KindTime:
+		return value.Time().Format(time.RFC3339Nano)
+	case slog.KindAny:
+		return anyValueString(value.Any())
+	default:
+		return value.String()
+	}
+}
+
+func anyValueString(value any) string {
+	switch v := value.(type) {
+	case nil:
+		return ""
+	case error:
+		return v.Error()
+	case fmt.Stringer:
+		return v.String()
+	case string:
+		return v
+	default:
+		return fmt.Sprint(v)
 	}
 }
 

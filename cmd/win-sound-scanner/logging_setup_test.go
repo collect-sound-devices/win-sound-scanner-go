@@ -18,7 +18,7 @@ func TestNewAppLoggerFormatsInfoLine(t *testing.T) {
 	logger.Info("message", "count", 2)
 
 	line := strings.TrimSpace(buffer.String())
-	pattern := regexp.MustCompile(`^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6} I \[\d+\] message component="scanner" count=2$`)
+	pattern := regexp.MustCompile(`^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6} I \[scanner\] \[\d+\] message count=2$`)
 	if !pattern.MatchString(line) {
 		t.Fatalf("unexpected log line: %q", line)
 	}
@@ -42,6 +42,9 @@ func TestAppLogHandlerUsesLocalTimeAndMicroseconds(t *testing.T) {
 	expectedPrefix := stamp.Local().Format(appLogTimeLayout) + " I ["
 	if !strings.HasPrefix(line, expectedPrefix) {
 		t.Fatalf("expected prefix %q, got %q", expectedPrefix, line)
+	}
+	if !strings.Contains(line, " [unknown] [") {
+		t.Fatalf("expected unknown component in %q", line)
 	}
 	if !strings.Contains(line, "] message") {
 		t.Fatalf("expected message in %q", line)
@@ -75,10 +78,22 @@ func TestWithGroupIsNoOp(t *testing.T) {
 	logger.Info("message")
 
 	line := strings.TrimSpace(buffer.String())
-	if !strings.Contains(line, ` component="scanner"`) {
-		t.Fatalf("expected flat component attr in %q", line)
+	if !strings.Contains(line, ` [scanner] [`) {
+		t.Fatalf("expected component prefix in %q", line)
 	}
-	if strings.Contains(line, "ignored.component=") {
-		t.Fatalf("expected WithGroup to be a no-op, got %q", line)
+	if strings.Contains(line, ` component="scanner"`) {
+		t.Fatalf("expected component attr to be removed from tail in %q", line)
+	}
+}
+
+func TestNewAppLoggerUsesUnknownComponentWhenMissing(t *testing.T) {
+	var buffer bytes.Buffer
+
+	newAppLogger(&buffer).Info("message", "count", 2)
+
+	line := strings.TrimSpace(buffer.String())
+	pattern := regexp.MustCompile(`^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6} I \[unknown\] \[\d+\] message count=2$`)
+	if !pattern.MatchString(line) {
+		t.Fatalf("unexpected log line: %q", line)
 	}
 }
