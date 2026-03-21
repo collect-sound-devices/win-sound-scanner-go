@@ -13,7 +13,7 @@ import (
 
 	"github.com/kardianos/service"
 
-	"github.com/collect-sound-devices/win-sound-go-bridge/internal/scannerapp"
+	"github.com/collect-sound-devices/win-sound-scanner-go/internal/scannerapp"
 )
 
 const (
@@ -54,7 +54,7 @@ func (p *scannerProgram) Start(_ service.Service) error {
 	if err != nil {
 		return err
 	}
-	logger := newAppLogger(logFile).With("component", "service")
+	logger := newAppLogger(logFile)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan struct{})

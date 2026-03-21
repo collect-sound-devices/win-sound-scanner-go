@@ -16,6 +16,6 @@ func NewEmptyRequestEnqueuer(logger *slog.Logger) *EmptyRequestEnqueuer {
 }
 
 func (e *EmptyRequestEnqueuer) EnqueueRequest(request Request) error {
-	e.logger.Info("dropping request in empty enqueuer", "event", request.Event, "fields", request.Fields)
+	e.logger.Info("Dropping request in empty enqueuer", "event", request.Event, "fields", request.Fields)
 	return nil
 }

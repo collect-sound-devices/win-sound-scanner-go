@@ -34,7 +34,7 @@ if ($mingwPath -ne "") {
     $Env:CXX = Join-Path $mingwPath "bin/x86_64-w64-mingw32-clang++.exe"
 }
 
-$modulePath = "github.com/collect-sound-devices/win-sound-go-bridge"
+$modulePath = "github.com/collect-sound-devices/win-sound-scanner-go"
 
 $versionText = $appVersion.TrimStart("v")
 .\scripts\internal\version-info.ps1 -appName $appName -appVersion $versionText -mingwPath $mingwPath

@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/collect-sound-devices/win-sound-go-bridge/internal/scannerapp"
+	"github.com/collect-sound-devices/win-sound-scanner-go/internal/scannerapp"
 )
 
 var (
@@ -61,5 +61,5 @@ func runScanner(ctx context.Context, logger *slog.Logger) error {
 func runConsole() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	return runScanner(ctx, newAppLogger(os.Stdout).With("component", "console"))
+	return runScanner(ctx, newAppLogger(os.Stdout))
 }

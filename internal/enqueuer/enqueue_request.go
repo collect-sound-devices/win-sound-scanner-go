@@ -3,7 +3,7 @@ package enqueuer
 import (
 	"time"
 
-	"github.com/collect-sound-devices/win-sound-go-bridge/internal/contract"
+	"github.com/collect-sound-devices/win-sound-scanner-go/internal/contract"
 )
 
 type Request struct {
