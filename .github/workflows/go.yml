@@ -79,34 +79,6 @@ jobs:
         with:
           go-version: "1.25.x"
 
-      - name: Install llvm-mingw (clang toolchain for CGO)
-        shell: powershell
-        run: |
-          # NOTE: keep this in sync with a real llvm-mingw release tag
-          $url = "https://github.com/mstorsjo/llvm-mingw/releases/download/20240619/llvm-mingw-20240619-msvcrt-x86_64.zip"
-          $zip = Join-Path $Env:TEMP "llvm-mingw.zip"
-          $destRoot = "C:\tools"
-          $dest = Join-Path $destRoot "llvm-mingw"
-
-          New-Item -ItemType Directory -Force -Path $destRoot | Out-Null
-          New-Item -ItemType Directory -Force -Path $dest | Out-Null
-
-          Write-Host "Downloading llvm-mingw from $url ..."
-          Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
-
-          Write-Host "Extracting to $dest ..."
-          Expand-Archive -Path $zip -DestinationPath $dest -Force
-
-          # The archive usually unpacks into a subfolder; move contents up if needed
-          $inner = Get-ChildItem -Path $dest | Where-Object { $_.PSIsContainer } | Select-Object -First 1
-          if ($inner) {
-            Write-Host "Flattening $($inner.FullName) into $dest ..."
-            Get-ChildItem -Path $inner.FullName | Move-Item -Destination $dest -Force
-            Remove-Item -Recurse -Force $inner.FullName
-          }
-          Remove-Item $zip -Force
-          Write-Host "llvm-mingw installed under $dest"
-
       - name: Set build version
         shell: powershell
         run: |
@@ -136,7 +108,7 @@ jobs:
       - name: Build Go binary
         shell: powershell
         run: |
-          .\scripts\build.ps1 -mingwPath "C:\tools\llvm-mingw" -appName $Env:APP_NAME -appVersion $Env:APP_VERSION
+          .\scripts\build.ps1 -appName $Env:APP_NAME -appVersion $Env:APP_VERSION -respectExistingCompiler
 
       - name: Package bin directory
         shell: powershell
