@@ -47,7 +47,7 @@ $Env:CGO_ENABLED = "1"
 $modulePath = "github.com/collect-sound-devices/win-sound-scanner-go"
 
 $versionText = $appVersion.TrimStart("v")
-.\scripts\internal\version-info.ps1 -appName $appName -appVersion $versionText -mingwPath $mingwPath
+.\scripts\internal\version-info.ps1 -appName $appName -appVersion $versionText -mingwPath $mingwPath -respectExistingCompiler:$respectExistingCompiler
 
 $ldflags = "-X $modulePath/pkg/appinfo.AppName=$appName -X $modulePath/pkg/appinfo.Version=$versionText"
 $outputPath = Join-Path $PWD.Path "bin/win-sound-scanner.exe"
