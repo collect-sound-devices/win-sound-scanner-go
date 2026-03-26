@@ -30,34 +30,7 @@ $rcTemplatePath = Join-Path $repoRoot "cmd/win-sound-scanner/versioninfo.rc"
 $rcBuildPath = Join-Path $env:TEMP "win-sound-scanner-versioninfo.rc"
 $sysoPath = Join-Path $repoRoot "cmd/win-sound-scanner/versioninfo_windows.syso"
 $windresExeName = "x86_64-w64-mingw32-windres.exe"
-
-if (-not [string]::IsNullOrWhiteSpace($Env:CC)) {
-    $compilerPath = $Env:CC.Trim().Trim('"')
-    if (-not (Test-Path -LiteralPath $compilerPath)) {
-        $compilerCommand = Get-Command $compilerPath -ErrorAction SilentlyContinue
-        if ($compilerCommand) {
-            $compilerPath = $compilerCommand.Source
-        }
-    }
-}
-
-if ($compilerPath -and (Test-Path -LiteralPath $compilerPath)) {
-    $windresCandidatePath = Join-Path (Split-Path -Parent $compilerPath) $windresExeName
-    if (Test-Path -LiteralPath $windresCandidatePath) {
-        $windresPath = $windresCandidatePath
-    }
-}
-
-if (-not $windresPath -and -not $respectExistingCompiler -and $mingwPath -ne "") {
-    $windresCandidatePath = Join-Path $mingwPath (Join-Path "bin" $windresExeName)
-    if (Test-Path -LiteralPath $windresCandidatePath) {
-        $windresPath = $windresCandidatePath
-    }
-}
-
-if (-not $windresPath) {
-    $windresPath = (Get-Command $windresExeName -ErrorAction Stop).Source
-}
+$windresPath = $windresPath
 
 $rcContent = Get-Content -LiteralPath $rcTemplatePath -Raw
 $rcContent = $rcContent.Replace("__APP_NAME__", $appName)
