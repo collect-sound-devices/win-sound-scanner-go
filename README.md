@@ -134,6 +134,7 @@ Enable CGO  and a GCC-style toolchain (MinGW-w64 gcc or LLVM-mingw clang).
 ### Build Steps
 
 - Run `.\scripts\build.ps1 -m "E:\tools\llvm-mingw"` with your path to the mingw toolchain
+- `scripts\build.ps1` always generates VersionInfo via `rc.exe` and `cvtres.exe`, so install Visual Studio Build Tools/Windows SDK or run from a Visual Studio Developer PowerShell/Command Prompt
 - To sign the exe during that build, set `WIN_SOUND_SIGN_PFX_PATH` and `WIN_SOUND_SIGN_PFX_PASSWORD` before running the script
 - Alternatively, set the environment variables for CGO and the compiler manually, then run the build commands below:
   ```powershell

@@ -7,8 +7,6 @@ Path to llvm-mingw root; set to empty to skip overriding CC/CXX.
 Application name used for ldflags and VersionInfo.
 .PARAMETER appVersion
 Application version used for ldflags and VersionInfo.
-.PARAMETER respectExistingCompiler
-Respect existing CC/CXX values instead of forcing an auto-detected GNU toolchain.
 #>
 
 Param(
@@ -20,10 +18,7 @@ Param(
     [string]$appName = "win-sound-scanner",
 
     [Parameter(HelpMessage = "Application version used for ldflags and VersionInfo.")]
-    [string]$appVersion = "dev",
-
-    [Parameter(HelpMessage = "Respect existing CC/CXX values instead of forcing an auto-detected GNU toolchain.")]
-    [switch]$respectExistingCompiler
+    [string]$appVersion = "dev"
 )
 
 # go to the repo root (parent of the script directory)
@@ -31,23 +26,22 @@ Set-Location -LiteralPath $PSScriptRoot
 $repoRoot = [System.IO.Directory]::GetParent($PSScriptRoot).FullName
 Set-Location -LiteralPath $repoRoot
 
-if (-not $respectExistingCompiler) {
-    if ($mingwPath -ne "") {
-        if (-not (Test-Path -LiteralPath $mingwPath)) {
-            Write-Error "mingwPath '$mingwPath' does not exist. Set it to a valid llvm-mingw root or pass an empty string to skip overriding CC/CXX."
-            Get-Help $PSCommandPath -Detailed
-            exit 1
-        }
-        $Env:CC = Join-Path $mingwPath "bin/x86_64-w64-mingw32-clang.exe"
-        $Env:CXX = Join-Path $mingwPath "bin/x86_64-w64-mingw32-clang++.exe"
+if ($mingwPath -ne "") {
+    if (-not (Test-Path -LiteralPath $mingwPath)) {
+        Write-Error "mingwPath '$mingwPath' does not exist. Set it to a valid llvm-mingw root or pass an empty string to skip overriding CC/CXX."
+        Get-Help $PSCommandPath -Detailed
+        exit 1
     }
+
+    $Env:CC = Join-Path $mingwPath "bin/x86_64-w64-mingw32-clang.exe"
+    $Env:CXX = Join-Path $mingwPath "bin/x86_64-w64-mingw32-clang++.exe"
 }
 
 $Env:CGO_ENABLED = "1"
 $modulePath = "github.com/collect-sound-devices/win-sound-scanner-go"
 
 $versionText = $appVersion.TrimStart("v")
-.\scripts\internal\version-info.ps1 -appName $appName -appVersion $versionText -mingwPath $mingwPath
+.\scripts\internal\version-info.ps1 -appName $appName -appVersion $versionText
 
 $ldflags = "-X $modulePath/pkg/appinfo.AppName=$appName -X $modulePath/pkg/appinfo.Version=$versionText"
 $outputPath = Join-Path $PWD.Path "bin/win-sound-scanner.exe"

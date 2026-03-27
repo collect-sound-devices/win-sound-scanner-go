@@ -108,7 +108,7 @@ jobs:
       - name: Build Go binary
         shell: powershell
         run: |
-          .\scripts\build.ps1 -appName $Env:APP_NAME -appVersion $Env:APP_VERSION -respectExistingCompiler
+          .\scripts\build.ps1 -appName $Env:APP_NAME -appVersion $Env:APP_VERSION -mingwPath ""
 
       - name: Package bin directory
         shell: powershell
