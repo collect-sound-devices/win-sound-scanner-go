@@ -28,15 +28,22 @@ if ($versionText -match '^(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:.*?(\d+))?$') {
 
 $rcTemplatePath = Join-Path $repoRoot "cmd/win-sound-scanner/versioninfo.rc"
 $rcBuildPath = Join-Path $env:TEMP "win-sound-scanner-versioninfo.rc"
+$resBuildPath = Join-Path $env:TEMP "win-sound-scanner-versioninfo.res"
 $sysoPath = Join-Path $repoRoot "cmd/win-sound-scanner/versioninfo_windows.syso"
 
-if ($respectExistingCompiler)
-{
-    Out-Host "CC/CXX $Env:CC, $Env:CCX; skipping mingwPath override."
-    $mingwPath = "C:/tools/llvm-mingw/"
+if (-not $respectExistingCompiler) {
+    if ($mingwPath -ne "") {
+        $windresPath = Join-Path $mingwPath "bin/x86_64-w64-mingw32-windres.exe"
+    }
+    else {
+        $windresPath = (Get-Command "x86_64-w64-mingw32-windres.exe" -ErrorAction Stop).Source
+    }
+}
+else {
+    $rcPath = (Get-Command "rc.exe" -ErrorAction Stop).Source
+    $cvtresPath = (Get-Command "cvtres.exe" -ErrorAction Stop).Source
 }
 
-$windresPath = Join-Path $mingwPath "bin/x86_64-w64-mingw32-windres.exe"
 
 $rcContent = Get-Content -LiteralPath $rcTemplatePath -Raw
 $rcContent = $rcContent.Replace("__APP_NAME__", $appName)
@@ -44,7 +51,20 @@ $rcContent = $rcContent.Replace("__APP_VERSION__", $versionText)
 $rcContent = $rcContent.Replace("__FILE_VERSION__", ($versionParts -join ","))
 [System.IO.File]::WriteAllText($rcBuildPath, $rcContent, [System.Text.Encoding]::ASCII)
 
-& $windresPath --input $rcBuildPath --output $sysoPath --output-format coff
-if ($LASTEXITCODE -ne 0) {
-    throw "windres failed with exit code $LASTEXITCODE."
+if (-not $respectExistingCompiler) {
+    & $windresPath --input $rcBuildPath --output $sysoPath --output-format coff
+    if ($LASTEXITCODE -ne 0) {
+        throw "windres failed with exit code $LASTEXITCODE."
+    }
+}
+else {
+    & $rcPath /nologo /fo $resBuildPath $rcBuildPath
+    if ($LASTEXITCODE -ne 0) {
+        throw "rc.exe failed with exit code $LASTEXITCODE."
+    }
+
+    & $cvtresPath /NOLOGO /MACHINE:X64 /OUT:$sysoPath $resBuildPath
+    if ($LASTEXITCODE -ne 0) {
+        throw "cvtres.exe failed with exit code $LASTEXITCODE."
+    }
 }
