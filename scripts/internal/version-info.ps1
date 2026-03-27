@@ -29,8 +29,13 @@ if ($versionText -match '^(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:.*?(\d+))?$') {
 $rcTemplatePath = Join-Path $repoRoot "cmd/win-sound-scanner/versioninfo.rc"
 $rcBuildPath = Join-Path $env:TEMP "win-sound-scanner-versioninfo.rc"
 $sysoPath = Join-Path $repoRoot "cmd/win-sound-scanner/versioninfo_windows.syso"
-$windresExeName = "x86_64-w64-mingw32-windres.exe"
-$windresPath = $windresPath
+
+if ($respectExistingCompiler)
+{
+    $mingwPath = "C:/tools/llvm-mingw/"
+}
+
+$windresPath = Join-Path $mingwPath "bin/x86_64-w64-mingw32-windres.exe"
 
 $rcContent = Get-Content -LiteralPath $rcTemplatePath -Raw
 $rcContent = $rcContent.Replace("__APP_NAME__", $appName)
