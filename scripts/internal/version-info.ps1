@@ -30,57 +30,85 @@ function Resolve-RequiredCommand {
         return $command.Source
     }
 
+    $command = Resolve-VisualStudioCommand $commandName
+    if ($command) {
+        return $command
+    }
+
     throw $missingMessage
 }
 
-function Resolve-OptionalCommand {
+function Resolve-VisualStudioCommand {
     Param(
         [Parameter(Mandatory = $true)]
         [string]$commandName
     )
 
-    $command = Get-Command $commandName -ErrorAction SilentlyContinue
-    if ($command) {
-        return $command.Source
-    }
-
-    return $null
-}
-
-function Resolve-WindresPath {
-    Param(
-        [Parameter()]
-        [string]$compilerCommand,
-
-        [Parameter()]
-        [string]$toolchainRoot,
-
-        [Parameter(Mandatory = $true)]
-        [string]$windresExeName
-    )
-
-    if (-not [string]::IsNullOrWhiteSpace($compilerCommand)) {
-        $compilerPath = $compilerCommand.Trim().Trim('"')
-        if (-not (Test-Path -LiteralPath $compilerPath)) {
-            $compilerPath = Resolve-OptionalCommand $compilerPath
+    if ($commandName -eq "rc.exe") {
+        $kitsRoots = @()
+        if (-not [string]::IsNullOrWhiteSpace($Env:WindowsSdkDir)) {
+            $kitsRoots += Join-Path $Env:WindowsSdkDir "bin"
         }
+        $kitsRoots += "C:\Program Files (x86)\Windows Kits\10\bin"
 
-        if ($compilerPath -and (Test-Path -LiteralPath $compilerPath)) {
-            $windresCandidatePath = Join-Path (Split-Path -Parent $compilerPath) $windresExeName
-            if (Test-Path -LiteralPath $windresCandidatePath) {
-                return $windresCandidatePath
+        foreach ($kitsRoot in $kitsRoots | Select-Object -Unique) {
+            if (-not (Test-Path -LiteralPath $kitsRoot)) {
+                continue
+            }
+
+            $candidate = Get-ChildItem -LiteralPath $kitsRoot -Directory -ErrorAction SilentlyContinue |
+                Sort-Object Name -Descending |
+                ForEach-Object { Join-Path $_.FullName "x64\rc.exe" } |
+                Where-Object { Test-Path -LiteralPath $_ } |
+                Select-Object -First 1
+
+            if ($candidate) {
+                return $candidate
             }
         }
     }
 
-    if (-not [string]::IsNullOrWhiteSpace($toolchainRoot)) {
-        $windresCandidatePath = Join-Path $toolchainRoot (Join-Path "bin" $windresExeName)
-        if (Test-Path -LiteralPath $windresCandidatePath) {
-            return $windresCandidatePath
+    if ($commandName -eq "cvtres.exe") {
+        if (-not [string]::IsNullOrWhiteSpace($Env:VCToolsInstallDir)) {
+            $candidate = Join-Path $Env:VCToolsInstallDir "bin\Hostx64\x64\cvtres.exe"
+            if (Test-Path -LiteralPath $candidate) {
+                return $candidate
+            }
+        }
+
+        $vswherePaths = @(
+            "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe",
+            "C:\Program Files\Microsoft Visual Studio\Installer\vswhere.exe"
+        )
+
+        foreach ($vswherePath in $vswherePaths) {
+            if (-not (Test-Path -LiteralPath $vswherePath)) {
+                continue
+            }
+
+            $installationPath = (& $vswherePath -latest -products * -property installationPath | Select-Object -First 1).Trim()
+            if (-not $installationPath) {
+                continue
+            }
+
+            $msvcRoot = Join-Path $installationPath "VC\Tools\MSVC"
+            if (-not (Test-Path -LiteralPath $msvcRoot)) {
+                continue
+            }
+
+            $candidate = Get-ChildItem -LiteralPath $msvcRoot -Directory -ErrorAction SilentlyContinue |
+                Sort-Object Name -Descending |
+                ForEach-Object { Join-Path $_.FullName "bin\Hostx64\x64\cvtres.exe" } |
+                Where-Object { Test-Path -LiteralPath $_ } |
+                Select-Object -First 1
+
+            if ($candidate) {
+                return $candidate
+            }
         }
     }
 
-    return Resolve-OptionalCommand $windresExeName
+    return $null
 }
 
 $versionText = $appVersion.TrimStart("v")
@@ -97,33 +125,19 @@ $rcTemplatePath = Join-Path $repoRoot "cmd/win-sound-scanner/versioninfo.rc"
 $rcBuildPath = Join-Path $env:TEMP "win-sound-scanner-versioninfo.rc"
 $resBuildPath = Join-Path $env:TEMP "win-sound-scanner-versioninfo.res"
 $sysoPath = Join-Path $repoRoot "cmd/win-sound-scanner/versioninfo_windows.syso"
-$windresExeName = "x86_64-w64-mingw32-windres.exe"
 
 if (-not $respectExistingCompiler) {
-    $windresPath = Resolve-WindresPath -compilerCommand $Env:CC -toolchainRoot $mingwPath -windresExeName $windresExeName
-    if (-not $windresPath) {
-        throw "$windresExeName was not found. Set -mingwPath to a valid llvm-mingw root or add $windresExeName to PATH."
-    }
-
-    $resourceCompilerMode = "windres"
-}
-else {
-    $windresPath = Resolve-WindresPath -compilerCommand $Env:CC -toolchainRoot "" -windresExeName $windresExeName
-    if ($windresPath) {
-        $resourceCompilerMode = "windres"
+    if ($mingwPath -ne "") {
+        $windresPath = Join-Path $mingwPath "bin/x86_64-w64-mingw32-windres.exe"
     }
     else {
-        $developerShellMessage = "Run this script from a Visual Studio Developer PowerShell/Command Prompt, or add the required Visual Studio build tools to PATH."
-        $rcPath = Resolve-OptionalCommand "rc.exe"
-        $cvtresPath = Resolve-OptionalCommand "cvtres.exe"
-
-        if ($rcPath -and $cvtresPath) {
-            $resourceCompilerMode = "msvc"
-        }
-        else {
-            throw "Neither $windresExeName next to CC='$Env:CC' nor rc.exe/cvtres.exe were found. $developerShellMessage"
-        }
+        $windresPath = (Get-Command "x86_64-w64-mingw32-windres.exe" -ErrorAction Stop).Source
     }
+}
+else {
+    $developerShellMessage = "Run this script from a Visual Studio Developer PowerShell/Command Prompt, or add the required Visual Studio build tools to PATH."
+    $rcPath = Resolve-RequiredCommand "rc.exe" "rc.exe was not found. $developerShellMessage"
+    $cvtresPath = Resolve-RequiredCommand "cvtres.exe" "cvtres.exe was not found. $developerShellMessage"
 }
 
 
@@ -133,7 +147,7 @@ $rcContent = $rcContent.Replace("__APP_VERSION__", $versionText)
 $rcContent = $rcContent.Replace("__FILE_VERSION__", ($versionParts -join ","))
 [System.IO.File]::WriteAllText($rcBuildPath, $rcContent, [System.Text.Encoding]::ASCII)
 
-if ($resourceCompilerMode -eq "windres") {
+if (-not $respectExistingCompiler) {
     & $windresPath --input $rcBuildPath --output $sysoPath --output-format coff
     if ($LASTEXITCODE -ne 0) {
         throw "windres failed with exit code $LASTEXITCODE."
