@@ -16,6 +16,23 @@ Param(
 $scriptDir = Split-Path -Parent $PSCommandPath
 $repoRoot = [System.IO.Directory]::GetParent([System.IO.Directory]::GetParent($scriptDir).FullName).FullName
 
+function Resolve-RequiredCommand {
+    Param(
+        [Parameter(Mandatory = $true)]
+        [string]$commandName,
+
+        [Parameter(Mandatory = $true)]
+        [string]$missingMessage
+    )
+
+    $command = Get-Command $commandName -ErrorAction SilentlyContinue
+    if ($command) {
+        return $command.Source
+    }
+
+    throw $missingMessage
+}
+
 $versionText = $appVersion.TrimStart("v")
 $versionParts = @(0, 0, 0, 0)
 if ($versionText -match '^(\d+)(?:\.(\d+))?(?:\.(\d+))?(?:.*?(\d+))?$') {
@@ -40,8 +57,9 @@ if (-not $respectExistingCompiler) {
     }
 }
 else {
-    $rcPath = (Get-Command "rc.exe" -ErrorAction Stop).Source
-    $cvtresPath = (Get-Command "cvtres.exe" -ErrorAction Stop).Source
+    $developerShellMessage = "Run this script from a Visual Studio Developer PowerShell/Command Prompt, or add the required Visual Studio build tools to PATH."
+    $rcPath = Resolve-RequiredCommand "rc.exe" "rc.exe was not found. $developerShellMessage"
+    $cvtresPath = Resolve-RequiredCommand "cvtres.exe" "cvtres.exe was not found. $developerShellMessage"
 }
 
 
