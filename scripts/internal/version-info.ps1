@@ -32,6 +32,7 @@ $sysoPath = Join-Path $repoRoot "cmd/win-sound-scanner/versioninfo_windows.syso"
 
 if ($respectExistingCompiler)
 {
+    Out-Host "CC/CXX $Env:CC, $Env:CCX; skipping mingwPath override."
     $mingwPath = "C:/tools/llvm-mingw/"
 }
 
