@@ -1,16 +1,16 @@
 # PowerShell
 <#!
 Usage (local dev):
-    -RepoPath = "github.com/collect-sound-devices/sound-win-scanner"
-    -PkgSubDir = "github.com\collect-sound-devices\sound-win-scanner\v4@v4.0.4-rc.2\pkg\soundlibwrap" \
+    -RepoPath = "github.com/collect-sound-devices/win-sound-engine"
+    -PkgSubDir = "github.com\collect-sound-devices\win-sound-engine\v4@v4.0.4-rc.2\pkg\soundlibwrap" \
     -DllOutDir .\out
 
 This version downloads the release asset directly via HTTPS:
-  https://github.com/collect-sound-devices/sound-win-scanner/releases/download/<Tag>/SoundAgentApi-<Tag>.zip
+  https://github.com/collect-sound-devices/win-sound-engine/releases/download/<Tag>/SoundAgentApi-<Tag>.zip
 #>
 
 param(
-  [string]$RepoPath = "github.com/collect-sound-devices/sound-win-scanner",
+  [string]$RepoPath = "github.com/collect-sound-devices/win-sound-engine",
   [string]$PkgSubDir = "pkg\soundlibwrap",
   [string]$DllOutSubDir = "bin"
 )

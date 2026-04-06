@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/collect-sound-devices/sound-win-scanner/v4/pkg/soundlibwrap"
+	"github.com/collect-sound-devices/win-sound-engine/v4/pkg/soundlibwrap"
 	c "github.com/collect-sound-devices/win-sound-scanner-go/internal/contract"
 	"github.com/collect-sound-devices/win-sound-scanner-go/pkg/appinfo"
 )
