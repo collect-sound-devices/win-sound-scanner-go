@@ -1,5 +1,5 @@
-github.com/collect-sound-devices/sound-win-scanner/v4 v4.0.5 h1:ZkzTmiv4n7ZGXsAuc+dCOyHB1OIqlcsH9YjEsqe0Qso=
-github.com/collect-sound-devices/sound-win-scanner/v4 v4.0.5/go.mod h1:6prxM/TBm4uaHPBBq66zFxPMjlahnXlAmLXwaYFiVTA=
+github.com/collect-sound-devices/win-sound-engine/v4 v4.0.7-rc.2 h1:HcC9n2cqqHWGcT/jMvXCEBjwzynbuoIuQhDnwl6+7XA=
+github.com/collect-sound-devices/win-sound-engine/v4 v4.0.7-rc.2/go.mod h1:6bGHF3+RX69nlffAmWsnCWu57c5qVBoyZnstnRHepTA=
 github.com/kardianos/service v1.2.4 h1:XNlGtZOYNx2u91urOdg/Kfmc+gfmuIo1Dd3rEi2OgBk=
 github.com/kardianos/service v1.2.4/go.mod h1:E4V9ufUuY82F7Ztlu1eN9VXWIQxg8NoLQlmFe0MtrXc=
 github.com/rabbitmq/amqp091-go v1.10.0 h1:STpn5XsHlHGcecLmMFCtg7mqq0RnD+zFr4uzukfVhBw=

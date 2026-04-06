@@ -15,7 +15,7 @@ classDef invisibleNode fill:transparent, stroke:transparent;
 
 coreAudioApi["Core Audio<br>(Windows API)"]
 
-subgraph scannerBackend["sound-win-scanner Go module"]
+subgraph scannerBackend["win-sound-engine Go module"]
     invisible3["<br><br><br><br><br>"]
     class invisible3 invisibleNode
     goCgoWrapper["SoundLibWrap<br>(Go package)"]
@@ -60,7 +60,7 @@ rabbitMqRestForwarder -->|POST/PUT requests| deviceRepositoryApi
 </div>
 
 ## Functions
-- The WinSoundScanner collects audio device information on startup and subscribes to its changes with help of a C++/Go module, see [sound-win-scanner](https://github.com/collect-sound-devices/sound-win-scanner).
+- The WinSoundScanner collects audio device information on startup and subscribes to its changes with help of a C++/Go module, see [win-sound-engine](https://github.com/collect-sound-devices/win-sound-engine).
 - It forms the respective request-messages and pushes them to RabbitMQ channel.
 - The separate RMQ To REST API Forwarder (.NET service module) fetches the request-messages, transforms them to the REST API format (POST and PUT) and sends them to the 
 Audio Device Repository Server (ASP.Net Core) [audio-device-repo-server](https://github.com/collect-sound-devices/audio-device-repo-server/) with a React / TypeScript frontend [list-audio-react-app](https://github.com/collect-sound-devices/list-audio-react-app/), see [Primary Web Client](https://list-audio-react-app.vercel.app) application.
@@ -74,7 +74,7 @@ Audio Device Repository Server (ASP.Net Core) [audio-device-repo-server](https:/
 - **Go (Golang)**: Used for the main application logic and integration with C++ via CGO.
 - **RabbitMQ**: Message queuing for communication between components.
 
-Technically, WinSoundScanner is a Go(Golang)+CGO Windows executable that uses a Go module sound-win-scanner that includes a C++ Dll SoundAgentApi.dll as a backend.
+Technically, WinSoundScanner is a Go(Golang)+CGO Windows executable that uses a Go module win-sound-engine that includes a C++ Dll SoundAgentApi.dll as a backend.
 It can run as a console application or as a Windows Service.
 
 ## Usage
