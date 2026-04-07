@@ -14,7 +14,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-const appLogTimeLayout = "2006.01.02 15:04:05.000000"
+const appLogTimeLayout = "2006/01/02 15:04:05.000000-07:00"
 const appLogUnknownComponent = "unknown"
 
 type appLogHandler struct {
