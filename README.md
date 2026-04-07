@@ -70,11 +70,12 @@ Audio Device Repository Server (ASP.Net Core) [audio-device-repo-server](https:/
 
 ## Technologies Used
 
-- **C++/WindowsAPI/Go backend**: Core logic implementation for audio device detection and interaction with Windows APIs.
+- **Win Scanner Engine (C++ / WindowsAPI / Go)**: Core logic implementation for audio device detection and interaction with Windows APIs.
 - **Go (Golang)**: Used for the main application logic and integration with C++ via CGO.
 - **RabbitMQ**: Message queuing for communication between components.
 
-Technically, WinSoundScanner is a Go(Golang)+CGO Windows executable that uses a Go module win-sound-engine that includes a C++ Dll SoundAgentApi.dll as a backend.
+Technically, WinSoundScanner is a Windows executable, written in Go / CGO,
+based on a Go module win-sound-engine that includes a C++ Dll SoundAgentApi.dll as a backend.
 It can run as a console application or as a Windows Service.
 
 ## Usage
@@ -85,9 +86,8 @@ It can run as a console application or as a Windows Service.
   `.\bin\win-sound-scanner.exe install` (or unregister: `.\bin\win-sound-scanner.exe uninstall`)
 3. Start the service (run in elevated PowerShell):
   `.\bin\win-sound-scanner.exe start` (or stop: `.\bin\win-sound-scanner.exe stop`). Service logs are written to:
-   `%ProgramData%\WinSoundScanner\service.log`
-
-Note: The win-sound-scanner.exe can be started as a Windows CLI, too, with logging to the console window. Stop it via Ctrl-C
+   `%ProgramData%\WinSoundScanner\service.log`.<br><br>
+   You can also start win-sound-scanner.exe as a Windows CLI with logging to the console window. Stop it via Ctrl-C
 
 ## Configuration
 ### RabbitMQ Mode
@@ -120,7 +120,7 @@ $Env:WIN_SOUND_RABBITMQ_PORT = "5672"
 
 .\bin\win-sound-scanner.exe install
 ```
-Only currently defined `WIN_SOUND_*` variables are written into the service config.
+The `WIN_SOUND_*` environment variables are written into the service config.
 If you change service env vars later, run `stop`, `uninstall`, `install`, `start`.
 
 ## Build and Debug
@@ -159,7 +159,8 @@ Compile with -gcflags=all="-N -l" to disable optimizations and inlining, then ru
 Then use remote debugging in your IDE (e.g., GoLand) to connect to localhost:2345
 
 ## Changelog
-- 2026-03-18 Exe got a correct version info and signature.
+- 2026-04-07 Log timestamps includes timezone info.
+- 2026-03-18 Exe got version info and signature.
 - 2026-03-11 Added support for extended operating system version information (OS_VERSION_INFO). 
 - 2026-02-25 Replaced the static architecture image with Mermaid diagrams and refined module interaction diagrams for the scanner.
 - 2026-02-19 Added Windows Service support (`install`, `uninstall`, `start`, `stop`), file logging to `%ProgramData%\WinSoundScanner\service.log`, and split console/service startup paths.
