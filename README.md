@@ -31,7 +31,7 @@ soundAgentApiDll --> |Read device characteristics| coreAudioApi
 subgraph scannerService["<b>win-sound-scanner-go</b>"]
     invisible1["<br><br><br><br><br>"]
     class invisible1 invisibleNode
-    winSoundScannerService[["<b>WinSoundScanner</b><br>(Go Windows Service)"]]
+    winSoundScannerService[["WinSoundScanner<br>(Windows Service)"]]
     invisible2["<br><br><br><br><br>"]
     class invisible2 invisibleNode
 end
