@@ -31,7 +31,7 @@ soundAgentApiDll --> |Read device characteristics| coreAudioApi
 subgraph scannerService["<b>win-sound-scanner-go</b>"]
     invisible1["<br><br><br><br><br>"]
     class invisible1 invisibleNode
-    winSoundScannerService[["<b>WinSoundScanner</b><br>(Go Windows Service)"]]
+    winSoundScannerService[["WinSoundScanner<br>(Windows Service)"]]
     invisible2["<br><br><br><br><br>"]
     class invisible2 invisibleNode
 end
@@ -60,22 +60,25 @@ rabbitMqRestForwarder -->|POST/PUT requests| deviceRepositoryApi
 </div>
 
 ## Functions
-- The WinSoundScanner collects audio device information on startup and subscribes to its changes with help of a C++/Go module, see [win-sound-engine](https://github.com/collect-sound-devices/win-sound-engine).
-- It forms the respective request-messages and pushes them to RabbitMQ channel.
-- The separate RMQ To REST API Forwarder (.NET service module) fetches the request-messages, transforms them to the REST API format (POST and PUT) and sends them to the 
+- The current WinSoundScanner collects audio device information on startup and subscribes to its change events using an underlying Windows Sound Engine module (C++/Go), see [win-sound-engine](https://github.com/collect-sound-devices/win-sound-engine).
+- It converts the change events into request messages and pushes them to a RabbitMQ channel.
+- The separate RMQ To REST API Forwarder (.NET service module) fetches the request messages from the channel, transforms them to the REST API format (POST and PUT) and sends them to the
 Audio Device Repository Server (ASP.Net Core) [audio-device-repo-server](https://github.com/collect-sound-devices/audio-device-repo-server/) with a React / TypeScript frontend [list-audio-react-app](https://github.com/collect-sound-devices/list-audio-react-app/), see [Primary Web Client](https://list-audio-react-app.vercel.app) application.
 <a href="./docs/202509011555ReactRepoApp.jpg">
   <img src="./docs/202509011555ReactRepoApp.jpg" alt="architecture diagram" width="300" />
 </a>
 
+## Dependecies
+
+- **WinScannerEngine (C++ / WindowsAPI / Go)**: Implements audio device discovery and change detection in direct interaction with operating system via Windows APIs.
+
 ## Technologies Used
 
-- **Win Scanner Engine (C++ / WindowsAPI / Go)**: Core logic implementation for audio device detection and interaction with Windows APIs.
 - **Go (Golang)**: Used for the main application logic and integration with C++ via CGO.
 - **RabbitMQ**: Message queuing for communication between components.
 
 Technically, WinSoundScanner is a Windows executable, written in Go / CGO,
-based on a Go module win-sound-engine that includes a C++ Dll SoundAgentApi.dll as a backend.
+based on a Go module win-sound-engine that includes a C++ Dll SoundAgentApi.dll (WinScannerEngine-frontend)
 It can run as a console application or as a Windows Service.
 
 ## Usage
@@ -159,7 +162,7 @@ Compile with -gcflags=all="-N -l" to disable optimizations and inlining, then ru
 Then use remote debugging in your IDE (e.g., GoLand) to connect to localhost:2345
 
 ## Changelog
-- 2026-04-07 Log timestamps includes timezone info.
+- 2026-04-07 Log timestamps include time zone info now.
 - 2026-03-18 Exe got version info and signature.
 - 2026-03-11 Added support for extended operating system version information (OS_VERSION_INFO). 
 - 2026-02-25 Replaced the static architecture image with Mermaid diagrams and refined module interaction diagrams for the scanner.
