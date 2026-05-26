@@ -1,0 +1,17 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="(empty)win-sound-scanner-go" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <module name="win-sound-scanner-go" />
+    <working_directory value="$PROJECT_DIR$" />
+    <envs>
+      <env name="CGO_ENABLED" value="1" />
+      <env name="WIN_SOUND_ENQUEUER" value="empty" />
+      <env name="PATH" value="%PAT%;c:\Tools\llvm-mingw\bin\" />
+    </envs>
+    <kind value="PACKAGE" />
+    <package value="github.com/collect-sound-devices/win-sound-scanner-go/cmd/win-sound-scanner" />
+    <directory value="$PROJECT_DIR$" />
+    <filePath value="$PROJECT_DIR$" />
+    <output_directory value="$PROJECT_DIR$/bin" />
+    <method v="2" />
+  </configuration>
+</component>
