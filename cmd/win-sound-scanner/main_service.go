@@ -33,6 +33,10 @@ var serviceEnvKeys = []string{
 	scannerapp.EnvWinSoundRabbitMQExchange,
 	scannerapp.EnvWinSoundRabbitMQQueue,
 	scannerapp.EnvWinSoundRabbitMQRoutingKey,
+	scannerapp.EnvWinSoundKafkaBrokers,
+	scannerapp.EnvWinSoundKafkaTopic,
+	scannerapp.EnvWinSoundKafkaClientID,
+	scannerapp.EnvWinSoundKafkaWriteTimeout,
 }
 
 type scannerProgram struct {

@@ -13,4 +13,8 @@ const (
 	EnvWinSoundRabbitMQExchange      = "WIN_SOUND_RABBITMQ_EXCHANGE"
 	EnvWinSoundRabbitMQQueue         = "WIN_SOUND_RABBITMQ_QUEUE"
 	EnvWinSoundRabbitMQRoutingKey    = "WIN_SOUND_RABBITMQ_ROUTING_KEY"
+	EnvWinSoundKafkaBrokers          = "WIN_SOUND_KAFKA_BROKERS"
+	EnvWinSoundKafkaTopic            = "WIN_SOUND_KAFKA_TOPIC"
+	EnvWinSoundKafkaClientID         = "WIN_SOUND_KAFKA_CLIENT_ID"
+	EnvWinSoundKafkaWriteTimeout     = "WIN_SOUND_KAFKA_WRITE_TIMEOUT_MS"
 )

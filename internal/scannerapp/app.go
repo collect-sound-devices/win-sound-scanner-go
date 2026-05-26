@@ -10,6 +10,7 @@ import (
 
 	c "github.com/collect-sound-devices/win-sound-scanner-go/internal/contract"
 	"github.com/collect-sound-devices/win-sound-scanner-go/internal/enqueuer"
+	kafkatarget "github.com/collect-sound-devices/win-sound-scanner-go/internal/kafka"
 	"github.com/collect-sound-devices/win-sound-scanner-go/internal/rabbitmq"
 )
 
@@ -109,9 +110,27 @@ func newRequestEnqueuer(ctx context.Context, logger *slog.Logger) (enqueuer.Enqu
 	}
 
 	if mode == EnvWinSoundEnqueuerVal02Kafka {
-		requestLogger.Info("Kafka is not yet implemented. Creating empty request enqueuer...")
-		return enqueuer.NewEmptyRequestEnqueuer(WithComponent(logger, " empty_enqueuer")), func() {}, nil
+		cfg, err := kafkatarget.LoadConfigFromEnv()
+		if err != nil {
+			return nil, nil, err
+		}
+
+		requestLogger.Info("Creating Kafka request publisher...")
+		publisher, err := kafkatarget.NewRequestPublisher(cfg, WithComponent(logger, "kafka_publisher"))
+		if err != nil {
+			return nil, nil, err
+		}
+
+		requestLogger.Info("Creating Kafka request enqueuer...")
+		reqEnqueuer := kafkatarget.NewEnqueuerWithContext(ctx, publisher, WithComponent(logger, "kafka_enqueuer"), cfg.WriteTimeout)
+		cleanup := func() {
+			if err := reqEnqueuer.Close(); err != nil {
+				requestLogger.Error("Kafka enqueuer close failed", "err", err)
+			}
+		}
+
+		return reqEnqueuer, cleanup, nil
 	}
 
-	return nil, nil, fmt.Errorf("unsupported %s=%q (supported: empty, rabbitmq)", EnvWinSoundEnqueuer, mode)
+	return nil, nil, fmt.Errorf("unsupported %s=%q (supported: empty, rabbitmq, kafka)", EnvWinSoundEnqueuer, mode)
 }
