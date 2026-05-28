@@ -79,58 +79,68 @@ func newRequestEnqueuer(ctx context.Context, logger *slog.Logger) (enqueuer.Enqu
 	mode := strings.ToLower(strings.TrimSpace(os.Getenv(EnvWinSoundEnqueuer)))
 	requestLogger := WithComponent(logger, "dispatch_enqueuer")
 
-	// Return a no-op enqueuer for testing or when RabbitMQ is not available.
-	if mode == EnvWinSoundEnqueuerVal00Empty {
-		requestLogger.Info("Creating empty request enqueuer...")
-		return enqueuer.NewEmptyRequestEnqueuer(WithComponent(logger, " empty_enqueuer")), func() {}, nil
+	switch mode {
+	case EnvWinSoundEnqueuerVal00Empty:
+		return newEmptyRequestEnqueuer(requestLogger, logger)
+	case "", EnvWinSoundEnqueuerVal01RabbitMq:
+		return newRabbitMQRequestEnqueuer(ctx, logger, requestLogger)
+	case EnvWinSoundEnqueuerVal02Kafka:
+		return newKafkaRequestEnqueuer(ctx, logger, requestLogger)
+	default:
+		return nil, nil, fmt.Errorf("unsupported %s=%q (supported: empty, rabbitmq, kafka)", EnvWinSoundEnqueuer, mode)
+	}
+}
+
+func newEmptyRequestEnqueuer(requestLogger *slog.Logger, logger *slog.Logger) (enqueuer.EnqueueRequest, func(), error) {
+	requestLogger.Info("Creating empty request enqueuer...")
+	emptyEnqueuer := enqueuer.NewEmptyRequestEnqueuer(WithComponent(logger, " empty_enqueuer"))
+	return emptyEnqueuer, func() {}, nil
+}
+
+func newRabbitMQRequestEnqueuer(ctx context.Context, logger, requestLogger *slog.Logger) (enqueuer.EnqueueRequest, func(), error) {
+	requestLogger.Info("Reading RabbitMQ configuration...")
+	cfg, err := rabbitmq.LoadConfigFromEnv()
+	if err != nil {
+		return nil, nil, err
 	}
 
-	if mode == "" || mode == EnvWinSoundEnqueuerVal01RabbitMq {
-
-		cfg, err := rabbitmq.LoadConfigFromEnv()
-		if err != nil {
-			return nil, nil, err
-		}
-
-		requestLogger.Info("Creating RabbitMQ request publisher...")
-		publisher, err := rabbitmq.NewRequestPublisher(ctx, cfg, WithComponent(logger, "rabbitmq_publisher"))
-		if err != nil {
-			return nil, nil, err
-		}
-
-		requestLogger.Info("Creating RabbitMQ request enqueuer...")
-		reqEnqueuer := rabbitmq.NewRabbitMqEnqueuerWithContext(ctx, publisher, WithComponent(logger, "rabbitmq_enqueuer"))
-		cleanup := func() {
-			if err := reqEnqueuer.Close(); err != nil {
-				requestLogger.Error("Rabbitmq enqueuer close failed", "err", err)
-			}
-		}
-
-		return reqEnqueuer, cleanup, nil
+	requestLogger.Info("Creating RabbitMQ request publisher...")
+	publisher, err := rabbitmq.NewRequestPublisher(ctx, cfg, WithComponent(logger, "rabbitmq_publisher"))
+	if err != nil {
+		return nil, nil, err
 	}
 
-	if mode == EnvWinSoundEnqueuerVal02Kafka {
-		cfg, err := kafkatarget.LoadConfigFromEnv()
-		if err != nil {
-			return nil, nil, err
+	requestLogger.Info("Creating RabbitMQ request enqueuer...")
+	reqEnqueuer := rabbitmq.NewRabbitMqEnqueuerWithContext(ctx, publisher, WithComponent(logger, "rabbitmq_enqueuer"))
+	cleanup := func() {
+		if err := reqEnqueuer.Close(); err != nil {
+			requestLogger.Error("Rabbitmq enqueuer close failed", "err", err)
 		}
-
-		requestLogger.Info("Creating Kafka request publisher...")
-		publisher, err := kafkatarget.NewRequestPublisher(cfg, WithComponent(logger, "kafka_publisher"))
-		if err != nil {
-			return nil, nil, err
-		}
-
-		requestLogger.Info("Creating Kafka request enqueuer...")
-		reqEnqueuer := kafkatarget.NewEnqueuerWithContext(ctx, publisher, WithComponent(logger, "kafka_enqueuer"), cfg.WriteTimeout)
-		cleanup := func() {
-			if err := reqEnqueuer.Close(); err != nil {
-				requestLogger.Error("Kafka enqueuer close failed", "err", err)
-			}
-		}
-
-		return reqEnqueuer, cleanup, nil
 	}
 
-	return nil, nil, fmt.Errorf("unsupported %s=%q (supported: empty, rabbitmq, kafka)", EnvWinSoundEnqueuer, mode)
+	return reqEnqueuer, cleanup, nil
+}
+
+func newKafkaRequestEnqueuer(ctx context.Context, logger, requestLogger *slog.Logger) (enqueuer.EnqueueRequest, func(), error) {
+	requestLogger.Info("Reading Kafka configuration...")
+	cfg, err := kafkatarget.LoadConfigFromEnv()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	requestLogger.Info("Creating Kafka request publisher...")
+	publisher, err := kafkatarget.NewRequestPublisher(cfg, WithComponent(logger, "kafka_publisher"))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	requestLogger.Info("Creating Kafka request enqueuer...")
+	reqEnqueuer := kafkatarget.NewEnqueuerWithContext(ctx, publisher, WithComponent(logger, "kafka_enqueuer"), cfg.WriteTimeout)
+	cleanup := func() {
+		if err := reqEnqueuer.Close(); err != nil {
+			requestLogger.Error("Kafka enqueuer close failed", "err", err)
+		}
+	}
+
+	return reqEnqueuer, cleanup, nil
 }
