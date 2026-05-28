@@ -10,6 +10,7 @@ import (
 
 	c "github.com/collect-sound-devices/win-sound-scanner-go/internal/contract"
 	"github.com/collect-sound-devices/win-sound-scanner-go/internal/enqueuer"
+	kafkatarget "github.com/collect-sound-devices/win-sound-scanner-go/internal/kafka"
 	"github.com/collect-sound-devices/win-sound-scanner-go/internal/rabbitmq"
 )
 
@@ -79,34 +80,57 @@ func newRequestEnqueuer(ctx context.Context, logger *slog.Logger) (enqueuer.Enqu
 	requestLogger := WithComponent(logger, "dispatch_enqueuer")
 
 	// Return a no-op enqueuer for testing or when RabbitMQ is not available.
-	if mode == "empty" {
+	if mode == EnvWinSoundEnqueuerVal00Empty {
 		requestLogger.Info("Creating empty request enqueuer...")
 		return enqueuer.NewEmptyRequestEnqueuer(WithComponent(logger, " empty_enqueuer")), func() {}, nil
 	}
 
-	// Validate that the configured mode is supported.
-	if mode != "" && mode != "rabbitmq" {
-		return nil, nil, fmt.Errorf("unsupported %s=%q (supported: empty, rabbitmq)", EnvWinSoundEnqueuer, mode)
-	}
+	if mode == "" || mode == EnvWinSoundEnqueuerVal01RabbitMq {
 
-	cfg, err := rabbitmq.LoadConfigFromEnv()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	requestLogger.Info("Creating RabbitMQ request publisher...")
-	publisher, err := rabbitmq.NewRequestPublisher(ctx, cfg, WithComponent(logger, "rabbitmq_publisher"))
-	if err != nil {
-		return nil, nil, err
-	}
-
-	requestLogger.Info("Creating RabbitMQ request enqueuer...")
-	reqEnqueuer := rabbitmq.NewRabbitMqEnqueuerWithContext(ctx, publisher, WithComponent(logger, "rabbitmq_enqueuer"))
-	cleanup := func() {
-		if err := reqEnqueuer.Close(); err != nil {
-			requestLogger.Error("Rabbitmq enqueuer close failed", "err", err)
+		cfg, err := rabbitmq.LoadConfigFromEnv()
+		if err != nil {
+			return nil, nil, err
 		}
+
+		requestLogger.Info("Creating RabbitMQ request publisher...")
+		publisher, err := rabbitmq.NewRequestPublisher(ctx, cfg, WithComponent(logger, "rabbitmq_publisher"))
+		if err != nil {
+			return nil, nil, err
+		}
+
+		requestLogger.Info("Creating RabbitMQ request enqueuer...")
+		reqEnqueuer := rabbitmq.NewRabbitMqEnqueuerWithContext(ctx, publisher, WithComponent(logger, "rabbitmq_enqueuer"))
+		cleanup := func() {
+			if err := reqEnqueuer.Close(); err != nil {
+				requestLogger.Error("Rabbitmq enqueuer close failed", "err", err)
+			}
+		}
+
+		return reqEnqueuer, cleanup, nil
 	}
 
-	return reqEnqueuer, cleanup, nil
+	if mode == EnvWinSoundEnqueuerVal02Kafka {
+		cfg, err := kafkatarget.LoadConfigFromEnv()
+		if err != nil {
+			return nil, nil, err
+		}
+
+		requestLogger.Info("Creating Kafka request publisher...")
+		publisher, err := kafkatarget.NewRequestPublisher(cfg, WithComponent(logger, "kafka_publisher"))
+		if err != nil {
+			return nil, nil, err
+		}
+
+		requestLogger.Info("Creating Kafka request enqueuer...")
+		reqEnqueuer := kafkatarget.NewEnqueuerWithContext(ctx, publisher, WithComponent(logger, "kafka_enqueuer"), cfg.WriteTimeout)
+		cleanup := func() {
+			if err := reqEnqueuer.Close(); err != nil {
+				requestLogger.Error("Kafka enqueuer close failed", "err", err)
+			}
+		}
+
+		return reqEnqueuer, cleanup, nil
+	}
+
+	return nil, nil, fmt.Errorf("unsupported %s=%q (supported: empty, rabbitmq, kafka)", EnvWinSoundEnqueuer, mode)
 }
