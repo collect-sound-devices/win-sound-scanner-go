@@ -2,6 +2,7 @@
   <dictionary name="project">
     <words>
       <w>Soundlibwrap</w>
+      <w>amqp</w>
       <w>pnpid</w>
       <w>rabbitmq</w>
     </words>
