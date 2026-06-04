@@ -37,11 +37,19 @@ subgraph scannerService["<b>win-sound-scanner-go</b>"]
 end
 class scannerService stressedBox
 
-subgraph requestQueueMicroservice["<br>"]
+subgraph eventTopicKafkaMicroservice["<br>"]
+    eventTopic[("Event Topic<br>(Kafka topic)")]
+    class eventTopic dottedBox
+    kafkaRestForwarder["KafkaToRestApiForwarder<br>(.NET microservice)"]
+    class kafkaRestForwarder dottedBox
+end
+class eventTopicKafkaMicroservice dottedBox
+
+subgraph requestQueueRabbitMqMicroservice["<br>"]
     requestQueue[("Request Queue<br>(RabbitMQ channel)")]
     rabbitMqRestForwarder["RmqToRestApiForwarder<br>(.NET microservice)"]
 end
-class requestQueueMicroservice dottedBox
+class requestQueueRabbitMqMicroservice dottedBox
 
 deviceRepositoryApi["Device Repository Server<br>(REST API)"]
 
@@ -51,11 +59,16 @@ goCgoWrapper -->|Device events| winSoundScannerService
 goCgoWrapper --> |C API calls| soundAgentApiDll
 soundAgentApiDll -->|C / C++ callbacks| goCgoWrapper
 
-winSoundScannerService -->|Publish request messages| requestQueue
+winSoundScannerService -..-> |Publish device events| eventTopic
+winSoundScannerService --->|Publish request messages| requestQueue
 
-requestQueue -->|Fetch request messages| rabbitMqRestForwarder
-rabbitMqRestForwarder --> |Detect request messages| requestQueue
-rabbitMqRestForwarder -->|POST/PUT requests| deviceRepositoryApi
+eventTopic -->|Fetch events| kafkaRestForwarder
+kafkaRestForwarder --> |Detect events| eventTopic
+kafkaRestForwarder -..->|POST/PUT requests| deviceRepositoryApi
+
+requestQueue -->|Fetch messages| rabbitMqRestForwarder
+rabbitMqRestForwarder --> |Detect messages| requestQueue
+rabbitMqRestForwarder --->|POST/PUT requests| deviceRepositoryApi
 ```
 </div>
 
