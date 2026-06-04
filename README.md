@@ -105,18 +105,21 @@ It can run as a console application or as a Windows Service.
    `%ProgramData%\WinSoundScanner\service.log`.<br><br>
    You can also start win-sound-scanner.exe as a Windows CLI with logging to the console window. Stop it via Ctrl-C
 
-## Configuration
-### RabbitMQ Mode
+## Enqueuer Configuration
+There are 3 enqueuer modes for request message publishing:
+- `rabbitmq` (default)
+- `empty` (no publishing)
+- `kafka`
+
 By default, scanner uses the RabbitMQ-enqueuer to publish device information. This requires a running RabbitMQ instance.
+
 To disable request publishing to RabbitMQ, set the environment variable `WIN_SOUND_ENQUEUER` to `empty`:
   ```powershell
   $Env:WIN_SOUND_ENQUEUER = "empty"
   ```
-In order to use RabbitMQ again, set it back to empty string `rabbitmq`:
-  ```powershell
-  $Env:WIN_SOUND_ENQUEUER = "rabbitmq"
-  ```
-### Optional RabbitMQ mode overrides with default values:
+### RabbitMQ Mode
+
+The following RabbitMQ settings (default see below) could be overridden by setting the corresponding environment variables:
 ```powershell
 $Env:WIN_SOUND_RABBITMQ_HOST = "localhost"
 $Env:WIN_SOUND_RABBITMQ_PORT = "5672"
@@ -127,7 +130,6 @@ $Env:WIN_SOUND_RABBITMQ_EXCHANGE = "sdr_exchange"
 $Env:WIN_SOUND_RABBITMQ_QUEUE = "sdr_queue"
 $Env:WIN_SOUND_RABBITMQ_ROUTING_KEY = "sdr_bind"
 ```
-### Service configuration with environment variables
 To store RabbitMQ settings as service environment variables, set them before `install`:
 ```powershell
 $Env:WIN_SOUND_ENQUEUER = "rabbitmq"
@@ -138,6 +140,34 @@ $Env:WIN_SOUND_RABBITMQ_PORT = "5672"
 ```
 The `WIN_SOUND_*` environment variables are written into the service config.
 If you change service env vars later, run `stop`, `uninstall`, `install`, `start`.
+
+### Apache Kafka Mode
+
+Set `WIN_SOUND_ENQUEUER` to `kafka` to publish request messages to Apache Kafka:
+```powershell
+$Env:WIN_SOUND_ENQUEUER = "kafka"
+```
+
+The following Kafka settings (default see below) could be overridden by setting the corresponding environment variables:
+```powershell
+$Env:WIN_SOUND_KAFKA_BROKERS = "localhost:29092"
+$Env:WIN_SOUND_KAFKA_TOPIC = "audio-device-events"
+$Env:WIN_SOUND_KAFKA_CLIENT_ID = "win-sound-scanner"
+$Env:WIN_SOUND_KAFKA_WRITE_TIMEOUT_MS = "10000"
+```
+`WIN_SOUND_KAFKA_BROKERS` accepts a comma-separated broker list, for example `"localhost:29092,kafka:9092"`.
+`WIN_SOUND_KAFKA_WRITE_TIMEOUT_MS` is the synchronous write timeout in milliseconds.
+
+To store Kafka settings as service environment variables, set them before `install`:
+```powershell
+$Env:WIN_SOUND_ENQUEUER = "kafka"
+$Env:WIN_SOUND_KAFKA_BROKERS = "localhost:29092"
+$Env:WIN_SOUND_KAFKA_TOPIC = "audio-device-events"
+
+.\bin\win-sound-scanner.exe install
+```
+The scanner writes one Kafka message per request. The message key is built from the host name and device PnP ID.
+
 
 ## Build and Debug
 
@@ -175,6 +205,7 @@ Compile with -gcflags=all="-N -l" to disable optimizations and inlining, then ru
 Then use remote debugging in your IDE (e.g., GoLand) to connect to localhost:2345
 
 ## Changelog
+- 2026-05-30 Added Kafka-based request enqueuer together with respective WIN_SOUND_KAFKA_* settings 
 - 2026-04-07 Log timestamps include time zone info now.
 - 2026-03-18 Exe got version info and signature.
 - 2026-03-11 Added support for extended operating system version information (OS_VERSION_INFO). 
