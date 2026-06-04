@@ -3,6 +3,7 @@
     <words>
       <w>Soundlibwrap</w>
       <w>amqp</w>
+      <w>kafka</w>
       <w>pnpid</w>
       <w>rabbitmq</w>
     </words>
