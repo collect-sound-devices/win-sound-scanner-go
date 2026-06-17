@@ -35,7 +35,7 @@ func BuildRequestPayload(request Request) (RequestPayload, error) {
 	if httpRequest == "POST" && flowType != 0 {
 		payload[contract.FieldFlowType] = flowType
 	}
-	var updateDateUtc = time.Now().UTC().Format(time.RFC3339)
+	var updateDateUtc = request.Timestamp.UTC().Format(time.RFC3339)
 	if _, ok := payload[contract.FieldUpdateDate]; ok {
 		updateDateUtc = payload[contract.FieldUpdateDate].(string)
 	} else {
