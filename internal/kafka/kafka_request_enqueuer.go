@@ -50,7 +50,7 @@ func (e *Enqueuer) EnqueueRequest(request enqueuer.Request) error {
 		return fmt.Errorf("marshal kafka payload: %w", err)
 	}
 
-	e.logger.Info("publishing event", "method", payload.HTTPRequest, "urlSuffix", payload.URLSuffix, "key", payload.DeviceKey)
+	e.logger.Info("publishing event", "method", payload.HTTPRequest, "urlSuffix", payload.URLSuffix, "key", payload.DeviceKey, "updated", payload.UpdateDateUtc)
 
 	ctx, cancel := context.WithTimeout(e.baseCtx, e.publishTimeout)
 	defer cancel()

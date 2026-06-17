@@ -76,7 +76,7 @@ func (e *RabbitMqEnqueuer) EnqueueRequest(request enqueuer.Request) error {
 		return fmt.Errorf("marshal rabbitmq payload: %w", err)
 	}
 
-	e.logger.Info("publishing request", "method", payload.HTTPRequest, "urlSuffix", payload.URLSuffix)
+	e.logger.Info("publishing request", "method", payload.HTTPRequest, "urlSuffix", payload.URLSuffix, "updated", payload.UpdateDateUtc)
 
 	ctx, cancel := context.WithTimeout(e.baseCtx, e.publishTimeout)
 	defer cancel()

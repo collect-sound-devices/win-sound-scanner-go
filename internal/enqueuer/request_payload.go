@@ -11,10 +11,11 @@ import (
 )
 
 type RequestPayload struct {
-	Body        []byte
-	HTTPRequest string
-	URLSuffix   string
-	DeviceKey   string
+	Body          []byte
+	HTTPRequest   string
+	URLSuffix     string
+	DeviceKey     string
+	UpdateDateUtc string
 }
 
 func BuildRequestPayload(request Request) (RequestPayload, error) {
@@ -34,8 +35,11 @@ func BuildRequestPayload(request Request) (RequestPayload, error) {
 	if httpRequest == "POST" && flowType != 0 {
 		payload[contract.FieldFlowType] = flowType
 	}
-	if _, ok := payload[contract.FieldUpdateDate]; !ok && !request.Timestamp.IsZero() {
-		payload[contract.FieldUpdateDate] = request.Timestamp.UTC().Format(time.RFC3339)
+	var updateDateUtc = time.Now().UTC().Format(time.RFC3339)
+	if _, ok := payload[contract.FieldUpdateDate]; ok {
+		updateDateUtc = payload[contract.FieldUpdateDate].(string)
+	} else {
+		payload[contract.FieldUpdateDate] = updateDateUtc
 	}
 
 	body, err := json.Marshal(payload)
@@ -44,10 +48,11 @@ func BuildRequestPayload(request Request) (RequestPayload, error) {
 	}
 
 	return RequestPayload{
-		Body:        body,
-		HTTPRequest: httpRequest,
-		URLSuffix:   urlSuffix,
-		DeviceKey:   deviceKey,
+		Body:          body,
+		HTTPRequest:   httpRequest,
+		URLSuffix:     urlSuffix,
+		DeviceKey:     deviceKey,
+		UpdateDateUtc: updateDateUtc,
 	}, nil
 }
 
