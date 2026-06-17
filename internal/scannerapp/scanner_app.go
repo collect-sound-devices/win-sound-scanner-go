@@ -27,7 +27,7 @@ type scannerAppImpl struct {
 	hostName       string
 }
 
-func NewImpl(enqueue func(c.EventType, map[string]string), logger *slog.Logger) (*scannerAppImpl, error) {
+func NewImpl(enqueue func(c.EventType, map[string]string), logger *slog.Logger) (ScannerApp, error) {
 	if enqueue == nil {
 		panic("nil enqueue")
 	}
@@ -156,7 +156,7 @@ func (app *scannerAppImpl) Shutdown() {
 
 func (app *scannerAppImpl) putVolumeChangeToApi(event c.EventType, pnpID string, volume int) {
 	fields := map[string]string{
-		c.FieldUpdateDate: time.Now().UTC().Format(time.RFC3339),
+		c.FieldUpdateDate: time.Now().UTC().Format("2006-01-02T15:04:05.000000Z07:00"),
 		c.FieldVolume:     strconv.Itoa(volume),
 		c.FieldHostName:   app.hostName,
 	}
@@ -189,7 +189,7 @@ func (app *scannerAppImpl) RepostCaptureDeviceToApi(event c.EventType) {
 
 func (app *scannerAppImpl) postDeviceToApi(event c.EventType, name, pnpID string, renderVolume, captureVolume int) {
 	fields := map[string]string{
-		c.FieldUpdateDate:          time.Now().UTC().Format(time.RFC3339),
+		c.FieldUpdateDate:          time.Now().UTC().Format("2006-01-02T15:04:05.000000Z07:00"),
 		c.FieldName:                name,
 		c.FieldPnpID:               pnpID,
 		c.FieldRenderVolume:        strconv.Itoa(renderVolume),
