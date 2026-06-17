@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/collect-sound-devices/win-sound-scanner-go/internal/contract"
 )
@@ -35,7 +34,7 @@ func BuildRequestPayload(request Request) (RequestPayload, error) {
 	if httpRequest == "POST" && flowType != 0 {
 		payload[contract.FieldFlowType] = flowType
 	}
-	var updateDateUtc = time.Now().UTC().Format(time.RFC3339)
+	var updateDateUtc = request.Timestamp.UTC().Format("2006-01-02T15:04:05.000000Z07:00")
 	if _, ok := payload[contract.FieldUpdateDate]; ok {
 		updateDateUtc = payload[contract.FieldUpdateDate].(string)
 	} else {
