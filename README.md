@@ -205,6 +205,7 @@ Compile with -gcflags=all="-N -l" to disable optimizations and inlining, then ru
 Then use remote debugging in your IDE (e.g., GoLand) to connect to localhost:2345
 
 ## Changelog
+- 2026-06-18 Bugfix:  Removed the one-second Kafka publish delay by flushing request events immediately after publishing.
 - 2026-05-30 Added Kafka-based request enqueuer together with respective WIN_SOUND_KAFKA_* settings 
 - 2026-04-07 Log timestamps include time zone info now.
 - 2026-03-18 Exe got version info and signature.
