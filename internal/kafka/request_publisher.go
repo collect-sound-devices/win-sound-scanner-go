@@ -28,6 +28,7 @@ func NewRequestPublisher(cfg Config, logger *slog.Logger) (*RequestPublisher, er
 		Addr:         kafkago.TCP(cfg.Brokers...),
 		Topic:        cfg.Topic,
 		Balancer:     &kafkago.Hash{},
+		BatchSize:    1,
 		RequiredAcks: kafkago.RequireAll,
 		WriteTimeout: cfg.WriteTimeout,
 		Async:        false,
