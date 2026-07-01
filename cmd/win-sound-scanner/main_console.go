@@ -36,6 +36,7 @@ func CoInitializeEx(coInit uintptr) error {
 }
 
 func CoUninitialize() {
+	//goland:noinspection GoUnhandledErrorResult
 	procCoUninitialize.Call() // best-effort cleanup; failure is ignored
 }
 

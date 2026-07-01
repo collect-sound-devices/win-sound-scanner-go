@@ -121,80 +121,90 @@ func (c Config) withDefaults() Config {
 func LoadConfigFromEnv() (Config, error) {
 	cfg := DefaultConfig()
 
-	if v := strings.TrimSpace(os.Getenv("WIN_SOUND_RABBITMQ_HOST")); v != "" {
-		cfg.Host = v
+	cfg.Host = trimmedEnvOrDefault("WIN_SOUND_RABBITMQ_HOST", cfg.Host)
+	cfg.VHost = envOrDefault("WIN_SOUND_RABBITMQ_VHOST", cfg.VHost)
+	cfg.User = envOrDefault("WIN_SOUND_RABBITMQ_USER", cfg.User)
+	cfg.Password = envOrDefault("WIN_SOUND_RABBITMQ_PASSWORD", cfg.Password)
+	cfg.ExchangeName = envOrDefault("WIN_SOUND_RABBITMQ_EXCHANGE", cfg.ExchangeName)
+	cfg.QueueName = envOrDefault("WIN_SOUND_RABBITMQ_QUEUE", cfg.QueueName)
+	cfg.RoutingKey = envOrDefault("WIN_SOUND_RABBITMQ_ROUTING_KEY", cfg.RoutingKey)
+
+	port, err := intEnvOrDefault("WIN_SOUND_RABBITMQ_PORT", cfg.Port)
+	if err != nil {
+		return Config{}, err
 	}
-	if v := strings.TrimSpace(os.Getenv("WIN_SOUND_RABBITMQ_PORT")); v != "" {
-		port, err := strconv.Atoi(v)
-		if err != nil {
-			return Config{}, fmt.Errorf("invalid WIN_SOUND_RABBITMQ_PORT %q: %w", v, err)
-		}
-		cfg.Port = port
+	cfg.Port = port
+
+	connectionThresholdSeconds, err := intEnvOrDefault("WIN_SOUND_RABBITMQ_CONNECTION_THRESHOLD_SEC", int(cfg.ConnectionThreshold/time.Second))
+	if err != nil {
+		return Config{}, err
 	}
-	if v := os.Getenv("WIN_SOUND_RABBITMQ_VHOST"); v != "" {
-		cfg.VHost = v
+	cfg.ConnectionThreshold = time.Duration(connectionThresholdSeconds) * time.Second
+
+	maxReconnectAttempts, err := nonNegativeIntEnvOrDefault("WIN_SOUND_RABBITMQ_MAX_RECONNECT_ATTEMPTS", cfg.MaxReconnectionAttempts)
+	if err != nil {
+		return Config{}, err
 	}
-	if v := os.Getenv("WIN_SOUND_RABBITMQ_USER"); v != "" {
-		cfg.User = v
+	cfg.MaxReconnectionAttempts = maxReconnectAttempts
+
+	initialReconnectDelayMillis, err := intEnvOrDefault("WIN_SOUND_RABBITMQ_INITIAL_RECONNECT_DELAY_MS", int(cfg.InitialReconnectDelay/time.Millisecond))
+	if err != nil {
+		return Config{}, err
 	}
-	if v := os.Getenv("WIN_SOUND_RABBITMQ_PASSWORD"); v != "" {
-		cfg.Password = v
+	cfg.InitialReconnectDelay = time.Duration(initialReconnectDelayMillis) * time.Millisecond
+
+	maxReconnectDelayMillis, err := nonNegativeIntEnvOrDefault("WIN_SOUND_RABBITMQ_MAX_RECONNECT_DELAY_MS", int(cfg.MaxReconnectDelay/time.Millisecond))
+	if err != nil {
+		return Config{}, err
 	}
-	if v := os.Getenv("WIN_SOUND_RABBITMQ_EXCHANGE"); v != "" {
-		cfg.ExchangeName = v
+	cfg.MaxReconnectDelay = time.Duration(maxReconnectDelayMillis) * time.Millisecond
+
+	publishConfirmTimeoutMillis, err := nonNegativeIntEnvOrDefault("WIN_SOUND_RABBITMQ_PUBLISH_CONFIRM_TIMEOUT_MS", int(cfg.PublishConfirmTimeout/time.Millisecond))
+	if err != nil {
+		return Config{}, err
 	}
-	if v := os.Getenv("WIN_SOUND_RABBITMQ_QUEUE"); v != "" {
-		cfg.QueueName = v
-	}
-	if v := os.Getenv("WIN_SOUND_RABBITMQ_ROUTING_KEY"); v != "" {
-		cfg.RoutingKey = v
-	}
-	if v := strings.TrimSpace(os.Getenv("WIN_SOUND_RABBITMQ_CONNECTION_THRESHOLD_SEC")); v != "" {
-		n, err := strconv.Atoi(v)
-		if err != nil {
-			return Config{}, fmt.Errorf("invalid WIN_SOUND_RABBITMQ_CONNECTION_THRESHOLD_SEC %q: %w", v, err)
-		}
-		cfg.ConnectionThreshold = time.Duration(n) * time.Second
-	}
-	if v := strings.TrimSpace(os.Getenv("WIN_SOUND_RABBITMQ_MAX_RECONNECT_ATTEMPTS")); v != "" {
-		n, err := strconv.Atoi(v)
-		if err != nil {
-			return Config{}, fmt.Errorf("invalid WIN_SOUND_RABBITMQ_MAX_RECONNECT_ATTEMPTS %q: %w", v, err)
-		}
-		if n < 0 {
-			return Config{}, fmt.Errorf("WIN_SOUND_RABBITMQ_MAX_RECONNECT_ATTEMPTS can not be negative %q", v)
-		}
-		cfg.MaxReconnectionAttempts = n
-	}
-	if v := strings.TrimSpace(os.Getenv("WIN_SOUND_RABBITMQ_INITIAL_RECONNECT_DELAY_MS")); v != "" {
-		n, err := strconv.Atoi(v)
-		if err != nil {
-			return Config{}, fmt.Errorf("invalid WIN_SOUND_RABBITMQ_INITIAL_RECONNECT_DELAY_MS %q: %w", v, err)
-		}
-		cfg.InitialReconnectDelay = time.Duration(n) * time.Millisecond
-	}
-	if v := strings.TrimSpace(os.Getenv("WIN_SOUND_RABBITMQ_MAX_RECONNECT_DELAY_MS")); v != "" {
-		n, err := strconv.Atoi(v)
-		if err != nil {
-			return Config{}, fmt.Errorf("invalid WIN_SOUND_RABBITMQ_MAX_RECONNECT_DELAY_MS %q: %w", v, err)
-		}
-		if n < 0 {
-			return Config{}, fmt.Errorf("WIN_SOUND_RABBITMQ_MAX_RECONNECT_DELAY_MS can not be negative %q", v)
-		}
-		cfg.MaxReconnectDelay = time.Duration(n) * time.Millisecond
-	}
-	if v := strings.TrimSpace(os.Getenv("WIN_SOUND_RABBITMQ_PUBLISH_CONFIRM_TIMEOUT_MS")); v != "" {
-		n, err := strconv.Atoi(v)
-		if err != nil {
-			return Config{}, fmt.Errorf("invalid WIN_SOUND_RABBITMQ_PUBLISH_CONFIRM_TIMEOUT_MS %q: %w", v, err)
-		}
-		if n < 0 {
-			return Config{}, fmt.Errorf("WIN_SOUND_RABBITMQ_PUBLISH_CONFIRM_TIMEOUT_MS can not be negative %q", v)
-		}
-		cfg.PublishConfirmTimeout = time.Duration(n) * time.Millisecond
-	}
+	cfg.PublishConfirmTimeout = time.Duration(publishConfirmTimeoutMillis) * time.Millisecond
 
 	return cfg.withDefaults(), nil
+}
+
+func envOrDefault(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
+
+func trimmedEnvOrDefault(key, fallback string) string {
+	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
+		return v
+	}
+	return fallback
+}
+
+func intEnvOrDefault(key string, fallback int) (int, error) {
+	v := strings.TrimSpace(os.Getenv(key))
+	if v == "" {
+		return fallback, nil
+	}
+
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return 0, fmt.Errorf("invalid %s %q: %w", key, v, err)
+	}
+
+	return n, nil
+}
+
+func nonNegativeIntEnvOrDefault(key string, fallback int) (int, error) {
+	n, err := intEnvOrDefault(key, fallback)
+	if err != nil {
+		return 0, err
+	}
+	if n < 0 {
+		return 0, fmt.Errorf("%s can not be negative %q", key, strings.TrimSpace(os.Getenv(key)))
+	}
+	return n, nil
 }
 
 func splitHostPort(raw string) (string, int, bool) {
