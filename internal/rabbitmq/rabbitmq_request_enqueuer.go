@@ -9,7 +9,7 @@ import (
 	"github.com/collect-sound-devices/win-sound-scanner-go/internal/enqueuer"
 )
 
-// RabbitMessagePublisher is the publish contract expected from a RabbitMQ publisher.
+// RabbitMessagePublisher is the publishing contract expected from a RabbitMQ publisher.
 type RabbitMessagePublisher interface {
 	Publish(ctx context.Context, body []byte) error
 	Close() error

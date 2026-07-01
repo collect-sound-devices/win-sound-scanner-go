@@ -107,7 +107,7 @@ func (h *appLogHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	return clone
 }
 
-func (h *appLogHandler) WithGroup(name string) slog.Handler {
+func (h *appLogHandler) WithGroup(_ string) slog.Handler {
 	return h.clone()
 }
 

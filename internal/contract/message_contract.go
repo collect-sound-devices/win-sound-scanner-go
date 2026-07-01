@@ -2,6 +2,7 @@ package contract
 
 type EventType uint8
 
+//goland:noinspection GoUnusedConst
 const (
 	EventTypeNothing EventType = iota
 	EventTypeRenderDeviceConfirmed
@@ -14,6 +15,7 @@ const (
 
 type MessageType uint8
 
+//goland:noinspection GoUnusedConst
 const (
 	MessageTypeConfirmed  = 0
 	MessageTypeDiscovered = 1
