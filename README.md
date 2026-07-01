@@ -1,6 +1,7 @@
 # win-sound-scanner (Windows Sound Scanner, WinSoundScanner)
 
-WinSoundScanner monitors audio devices and publishes their state changes to RabbitMQ for delivery to a REST API endpoint.
+WinSoundScanner monitors audio devices and publishes their state changes to RabbitMQ or Kafka (configurable)
+for downstream delivery to a REST API endpoint.
 
 ## Architecture
 
@@ -78,10 +79,10 @@ rabbitMqRestForwarder --->|POST/PUT requests| deviceRepositoryApi
 - The separate RMQ To REST API Forwarder (.NET service module) fetches the request messages from the channel, transforms them to the REST API format (POST and PUT) and sends them to the
 Audio Device Repository Server (ASP.Net Core) [audio-device-repo-server](https://github.com/collect-sound-devices/audio-device-repo-server/) with a React / TypeScript frontend [list-audio-react-app](https://github.com/collect-sound-devices/list-audio-react-app/), see [Primary Web Client](https://list-audio-react-app.vercel.app) application.
 <a href="./docs/202509011555ReactRepoApp.jpg">
-  <img src="./docs/202509011555ReactRepoApp.jpg" alt="architecture diagram" width="300" />
+  <img src="./docs/202509011555ReactRepoApp.jpg" alt="screenshot" width="300" />
 </a>
 
-## Dependecies
+## Dependencies.
 
 - **WinScannerEngine (C++ / WindowsAPI / Go)**: Implements audio device discovery and change detection in direct interaction with operating system via Windows APIs.
 
@@ -97,7 +98,7 @@ It can run as a console application or as a Windows Service.
 ## Usage
 
 ### Steps to run
-1. Download and unzip the latest rollout of WinSoundScanner-x.x.x[-rc.xx]. from the latest repository release's assets, [Release](https://github.com/collect-sound-devices/win-sound-scanner-go/releases/latest)
+1. Download and unzip the latest rollout of WinSoundScanner-x.x.x[-rc.xx] from the latest repository release's assets, [Release](https://github.com/collect-sound-devices/win-sound-scanner-go/releases/latest)
 2. Register the service (run in elevated PowerShell):
   `.\bin\win-sound-scanner.exe install` (or unregister: `.\bin\win-sound-scanner.exe uninstall`)
 3. Start the service (run in elevated PowerShell):
@@ -172,7 +173,7 @@ The scanner writes one Kafka message per request. The message key is built from 
 ## Build and Debug
 
 ### Prerequisites:
-Enable CGO  and a GCC-style toolchain (MinGW-w64 gcc or LLVM-mingw clang).
+Enable CGO and a GCC-style toolchain (MinGW-w64 gcc or LLVM-mingw clang).
 - Download an x86_64 LLVM‑mingw build (zip) from the official releases (search for “llvm-mingw releases”).
 - Your download's name is similar to llvm-mingw-20251118-msvcrt-x86_64.zip
 - Copy its bin, include,lib and x86_64-w64-mingw32 folders to some folder, e.g., E:\tools\llvm-mingw
@@ -197,7 +198,7 @@ Enable CGO  and a GCC-style toolchain (MinGW-w64 gcc or LLVM-mingw clang).
   ```
 
 ### Debug
-Compile with -gcflags=all="-N -l" to disable optimizations and inlining, then run with a debugger
+Compile with `-gcflags=all="-N -l"` to disable optimizations and inlining, then run the binary with a debugger.
   ```powershell
   go build -gcflags "all=-N -l" -o (Join-Path $PWD.Path 'bin/win-sound-scanner.exe') ./cmd/win-sound-scanner
   dlv --listen=:2345 --headless=true --api-version=2 --accept-multiclient exec ./bin/win-sound-scanner.exe
