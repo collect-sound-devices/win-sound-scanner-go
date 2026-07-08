@@ -11,7 +11,8 @@ for downstream delivery to a REST API endpoint.
 flowchart BT
 
 classDef dottedBox fill:transparent, fill-opacity:0.55, stroke-dasharray:10 8, stroke-width:2px;
-classDef stressedBox fill:#f0f0f0, fill-opacity:0.2, stroke-dasharray:10 8, stroke-width:4px;
+classDef stressedBox fill:#f0f0f0,fill-opacity:0.2,stroke-width:4px;
+classDef normalBox fill:#transparent,fill-opacity:0.0,stroke-width:1px;
 classDef invisibleNode fill:transparent, stroke:transparent;
 
 coreAudioApi["Core Audio<br>(Windows API)"]
@@ -24,15 +25,15 @@ subgraph scannerBackend["win-sound-engine Go module"]
     invisible4["<br><br><br><br><br>"]
     class invisible4 invisibleNode
 end
-class scannerBackend dottedBox
+class scannerBackend normalBox
 
 coreAudioApi -->|Device and volume change<br>notifications| soundAgentApiDll
 soundAgentApiDll --> |Read device characteristics| coreAudioApi
 
 subgraph scannerService["<b>win-sound-scanner-go</b>"]
-    invisible1["<br><br><br><br><br>"]
+    invisible1["<br><br><br><br>"]
     class invisible1 invisibleNode
-    winSoundScannerService[["WinSoundScanner<br>(Windows Service)"]]
+    winSoundScannerService["WinSoundScanner<br>(Windows Service)"]
     invisible2["<br><br><br><br><br>"]
     class invisible2 invisibleNode
 end
@@ -50,7 +51,7 @@ subgraph requestQueueRabbitMqMicroservice["<br>"]
     requestQueue[("Request Queue<br>(RabbitMQ channel)")]
     rabbitMqRestForwarder["RmqToRestApiForwarder<br>(.NET microservice)"]
 end
-class requestQueueRabbitMqMicroservice dottedBox
+class requestQueueRabbitMqMicroservice normalBox
 
 deviceRepositoryApi["Device Repository Server<br>(REST API)"]
 
