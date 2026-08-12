@@ -18,11 +18,11 @@ classDef invisibleNode fill:transparent, stroke:transparent;
 coreAudioApi["Core Audio<br>(Windows API)"]
 
 subgraph scannerBackend["win-sound-engine Go module"]
-    invisible3["<br><br><br><br><br>"]
+    invisible3[" <br><br><br><br><br>"]
     class invisible3 invisibleNode
     goCgoWrapper["SoundLibWrap<br>(Go package)"]
     soundAgentApiDll["ANSI C SoundAgentApi.dll,<br>SoundDeviceCollection<br>(C++ class)"]
-    invisible4["<br><br><br><br><br>"]
+    invisible4[" <br><br><br><br><br>"]
     class invisible4 invisibleNode
 end
 class scannerBackend normalBox
@@ -31,15 +31,15 @@ coreAudioApi -->|Device and volume change<br>notifications| soundAgentApiDll
 soundAgentApiDll --> |Read device characteristics| coreAudioApi
 
 subgraph scannerService["<b>win-sound-scanner-go</b>"]
-    invisible1["<br><br><br><br>"]
+    invisible1[" <br><br><br><br>"]
     class invisible1 invisibleNode
     winSoundScannerService["WinSoundScanner<br>(Windows Service)"]
-    invisible2["<br><br><br><br><br>"]
+    invisible2[" <br><br><br><br><br>"]
     class invisible2 invisibleNode
 end
 class scannerService stressedBox
 
-subgraph eventTopicKafkaMicroservice["<br>"]
+subgraph eventTopicKafkaMicroservice[" <br>"]
     eventTopic[("Event Topic<br>(Kafka topic)")]
     class eventTopic dottedBox
     kafkaRestForwarder["KafkaToRestApiForwarder<br>(.NET microservice)"]
@@ -47,7 +47,7 @@ subgraph eventTopicKafkaMicroservice["<br>"]
 end
 class eventTopicKafkaMicroservice dottedBox
 
-subgraph requestQueueRabbitMqMicroservice["<br>"]
+subgraph requestQueueRabbitMqMicroservice[" <br>"]
     requestQueue[("Request Queue<br>(RabbitMQ channel)")]
     rabbitMqRestForwarder["RmqToRestApiForwarder<br>(.NET microservice)"]
 end
