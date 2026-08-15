@@ -70,30 +70,16 @@ func (c Config) withDefaults() Config {
 		}
 	}
 
-	if strings.TrimSpace(c.Host) == "" {
-		c.Host = d.Host
-	}
+	c.Host = defaultTrimmedString(c.Host, d.Host)
 	if c.Port <= 0 {
 		c.Port = d.Port
 	}
-	if c.VHost == "" {
-		c.VHost = d.VHost
-	}
-	if c.User == "" {
-		c.User = d.User
-	}
-	if c.Password == "" {
-		c.Password = d.Password
-	}
-	if c.ExchangeName == "" {
-		c.ExchangeName = d.ExchangeName
-	}
-	if c.QueueName == "" {
-		c.QueueName = d.QueueName
-	}
-	if c.RoutingKey == "" {
-		c.RoutingKey = d.RoutingKey
-	}
+	c.VHost = defaultTrimmedString(c.VHost, d.VHost)
+	c.User = defaultTrimmedString(c.User, d.User)
+	c.Password = defaultTrimmedString(c.Password, d.Password)
+	c.ExchangeName = defaultTrimmedString(c.ExchangeName, d.ExchangeName)
+	c.QueueName = defaultTrimmedString(c.QueueName, d.QueueName)
+	c.RoutingKey = defaultTrimmedString(c.RoutingKey, d.RoutingKey)
 	if c.ConnectionThreshold <= 0 {
 		c.ConnectionThreshold = d.ConnectionThreshold
 	}
@@ -114,6 +100,13 @@ func (c Config) withDefaults() Config {
 	}
 
 	return c
+}
+
+func defaultTrimmedString(v, fallback string) string {
+	if strings.TrimSpace(v) == "" {
+		return fallback
+	}
+	return v
 }
 
 // LoadConfigFromEnv loads rabbit configuration from environment variables.

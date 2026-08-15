@@ -15,15 +15,15 @@ type RabbitMessagePublisher interface {
 	Close() error
 }
 
-// RabbitMqEnqueuer writes requests to RabbitMQ using the shared message-shaping.
-type RabbitMqEnqueuer struct {
+// Enqueuer writes requests to RabbitMQ using the shared message-shaping.
+type Enqueuer struct {
 	baseCtx        context.Context
 	publisher      RabbitMessagePublisher
 	logger         *slog.Logger
 	publishTimeout time.Duration
 }
 
-func NewRabbitMqEnqueuerWithContext(baseCtx context.Context, publisher RabbitMessagePublisher, logger *slog.Logger) *RabbitMqEnqueuer {
+func NewEnqueuerWithContext(baseCtx context.Context, publisher RabbitMessagePublisher, logger *slog.Logger) *Enqueuer {
 	if baseCtx == nil {
 		panic("nil context")
 	}
@@ -34,34 +34,9 @@ func NewRabbitMqEnqueuerWithContext(baseCtx context.Context, publisher RabbitMes
 		panic("nil logger")
 	}
 
-	return newRabbitMqEnqueuer(
-		baseCtx,
-		publisher,
-		logger,
-		10*time.Second,
-	)
-}
+	var publishTimeout = 10 * time.Second
 
-func newRabbitMqEnqueuer(
-	baseCtx context.Context,
-	publisher RabbitMessagePublisher,
-	logger *slog.Logger,
-	publishTimeout time.Duration,
-) *RabbitMqEnqueuer {
-	if baseCtx == nil {
-		panic("nil context")
-	}
-	if publisher == nil {
-		panic("nil publisher")
-	}
-	if logger == nil {
-		panic("nil logger")
-	}
-	if publishTimeout <= 0 {
-		publishTimeout = 10 * time.Second
-	}
-
-	return &RabbitMqEnqueuer{
+	return &Enqueuer{
 		baseCtx:        baseCtx,
 		publisher:      publisher,
 		logger:         logger,
@@ -69,7 +44,7 @@ func newRabbitMqEnqueuer(
 	}
 }
 
-func (e *RabbitMqEnqueuer) EnqueueRequest(request enqueuer.Request) error {
+func (e *Enqueuer) EnqueueRequest(request enqueuer.Request) error {
 	e.logger.Info("Preparing request in RabbitMQ enqueuer", "event", request.Event, "fields", request.Fields)
 	payload, err := enqueuer.BuildRequestPayload(request)
 	if err != nil {
@@ -87,6 +62,6 @@ func (e *RabbitMqEnqueuer) EnqueueRequest(request enqueuer.Request) error {
 	return nil
 }
 
-func (e *RabbitMqEnqueuer) Close() error {
+func (e *Enqueuer) Close() error {
 	return e.publisher.Close()
 }
