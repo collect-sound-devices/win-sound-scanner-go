@@ -244,7 +244,7 @@ func appendAnyValue(builder *strings.Builder, value any) {
 	case string:
 		builder.WriteString(strconv.Quote(v))
 	default:
-		builder.WriteString(fmt.Sprint(v))
+		_, _ = fmt.Fprint(builder, v)
 	}
 }
 
