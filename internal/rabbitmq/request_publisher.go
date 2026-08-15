@@ -22,6 +22,8 @@ type RequestPublisher struct {
 	confirms <-chan amqp.Confirmation
 }
 
+// NewRequestPublisher creates a RabbitMQ publisher and establishes the AMQP
+// connection/topology before returning.
 func NewRequestPublisher(ctx context.Context, cfg Config, logger *slog.Logger) (*RequestPublisher, error) {
 	if ctx == nil {
 		panic("nil context")
