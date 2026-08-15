@@ -9,8 +9,8 @@ import (
 	"github.com/collect-sound-devices/win-sound-scanner-go/internal/enqueuer"
 )
 
-// RabbitMessagePublisher is the publishing contract expected from a RabbitMQ publisher.
-type RabbitMessagePublisher interface {
+// MessagePublisher is the publishing contract expected from a RabbitMQ publisher.
+type MessagePublisher interface {
 	Publish(ctx context.Context, body []byte) error
 	Close() error
 }
@@ -18,12 +18,12 @@ type RabbitMessagePublisher interface {
 // Enqueuer writes requests to RabbitMQ using the shared message-shaping.
 type Enqueuer struct {
 	baseCtx        context.Context
-	publisher      RabbitMessagePublisher
+	publisher      MessagePublisher
 	logger         *slog.Logger
 	publishTimeout time.Duration
 }
 
-func NewEnqueuerWithContext(baseCtx context.Context, publisher RabbitMessagePublisher, logger *slog.Logger) *Enqueuer {
+func NewEnqueuerWithContext(baseCtx context.Context, publisher MessagePublisher, logger *slog.Logger) *Enqueuer {
 	if baseCtx == nil {
 		panic("nil context")
 	}
