@@ -111,7 +111,7 @@ func newRabbitMQRequestEnqueuer(ctx context.Context, logger, requestLogger *slog
 	}
 
 	requestLogger.Info("Creating RabbitMQ request enqueuer...")
-	reqEnqueuer := rabbitmq.NewRabbitMqEnqueuerWithContext(ctx, publisher, WithComponent(logger, "rabbitmq_enqueuer"))
+	reqEnqueuer := rabbitmq.NewEnqueuerWithContext(ctx, publisher, WithComponent(logger, "rabbitmq_enqueuer"))
 	cleanup := func() {
 		if err := reqEnqueuer.Close(); err != nil {
 			requestLogger.Error("Rabbitmq enqueuer close failed", "err", err)
